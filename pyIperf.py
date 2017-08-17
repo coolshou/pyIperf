@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (QApplication)
 import logging
 import psutil
 import atexit
+import pexpect
 #from nonblock import nonblock_read
 #import io
 #from threading  import Thread
@@ -297,11 +298,59 @@ class iperf3(QObject):
 
     @pyqtSlot()
     def task(self):
-        '''
+        #pexpect way to run program
         # Note: This is never called directly. It is called by Qt once the
         # thread environment has been set up.
         #exec by QThread.start()
-        '''
+        
+        self.stoped = False        
+        self.exiting = False
+        self.log('0',"start task")      
+        child = None
+        while not self.exiting:
+            try:
+                if len(self.sCmd)>0:
+                    print("sCmd: %s" % (" ".join(self.sCmd)))
+                    child = pexpect.spawn(" ".join(self.sCmd))
+                    atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
+                    while child.isalive():
+                        for line in child:
+                            rs = line.rstrip().decode("utf-8")
+                            if rs:
+                                print("%s" % (rs))                            
+                                self.signal_result.emit(self.iParallel, rs) #output result
+                else:
+                    self.log('0',"wait for command!!")
+                    pass
+            except:
+                self.traceback()
+                raise
+            finally:
+                #self.signal_finished.emit(-1, "proc end!!") 
+                if child:
+                    if child.isalive():
+                        child.kill(1)
+                self.log('0',"proc end!!")
+                #atexit.unregister(self.kill_proc)
+                self.sCmd.clear()
+                
+            if self.stoped:
+                self.signal_finished.emit(1, "signal_finished!!")
+                break
+            
+            QApplication.processEvents() 
+            time.sleep(2)
+            #self.log(0,"task running...")
+        
+        self.log(0,"task end!!")
+        self.signal_finished.emit(1, "task end!!")
+    '''
+    @pyqtSlot()
+    def task(self):
+        # Note: This is never called directly. It is called by Qt once the
+        # thread environment has been set up.
+        #exec by QThread.start()
+        
         self.stoped = False        
         self.exiting = False
         self.log('0',"start task")      
@@ -355,7 +404,7 @@ class iperf3(QObject):
         
         self.log(0,"task end!!")
         self.signal_finished.emit(1, "task end!!")
-
+    '''
     def kill_proc(self, proc):
         try:
             proc.terminate()
