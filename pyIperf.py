@@ -190,7 +190,7 @@ locker = QMutex()
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 class iperf3(QObject):
-    '''python of ipeerf3 class'''
+    '''python of iperf3 class'''
     __VERSION__ = '20170816'
     
     signal_result = pyqtSignal(int, str)
