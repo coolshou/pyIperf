@@ -274,8 +274,7 @@ class MainWindow(QMainWindow):
         
     @pyqtSlot(int, str)
     def parserServerReult(self, iType, msg):
-        #TODO: parserServerReult
-        #self.log(str(iType), "parserServerReult: %s = %s" % (iType, msg))
+        self.log(str(iType), "#TODO: parserServerReult: %s, %s" %( iType, msg))
         pass
 
     def updateData(self, row, col, val):
@@ -293,7 +292,7 @@ class MainWindow(QMainWindow):
         if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or  
             (('receiver' in msg) and (iCol == columnResult.colRx.value))):
             #self.log(str(iType), "parserReult: (%s,%s) %s = %s" % (iRow, iCol, iType, msg))
-            print("iType: %s" % iType)
+            print("parserReult iType: %s" % iType)
             rs = iperfResult(iType, msg)
             self.logToFile("%s %s" %(rs.throughput , rs.throughputUnit))
             if iType>1 and rs.idx == 'SUM':
@@ -319,7 +318,7 @@ class MainWindow(QMainWindow):
     
     @pyqtSlot(str,str)
     def log(self, sType, sMsg):
-        print("log: %s = %s" % (sType, sMsg))
+        #print("log: %s = %s" % (sType, sMsg))
         if not self.teLog is None:
             self.teLog.append(sMsg)
     
@@ -403,12 +402,20 @@ class MainWindow(QMainWindow):
             self.txC.signal_finished.connect(self.finish)
             self.txC.signal_error.connect(self.error)
             self.txC.signal_debug.connect(self.debug)
+        print("tx : %s" % self.txC.isRunning())
+        if not self.txC.isRunning():
+            self.txC.startTest()
+            
         if not self.rxC:
             self.rxC = Client(host, port)
             self.rxC.signal_result.connect(self.parserReult)
             self.rxC.signal_finished.connect(self.finish)
             self.rxC.signal_error.connect(self.error)
             self.rxC.signal_debug.connect(self.debug)
+        print("rx : %s" % self.rxC.isRunning())
+        if not self.rxC.isRunning():
+            self.rxC.startTest()
+
         #cmd = []
         for degree in range(self.ttStart.value(),self.ttEnd.value(), self.ttStep.value()):
             print("TODO: TurnTable control!! %s" % degree)
@@ -442,7 +449,8 @@ class MainWindow(QMainWindow):
                 except:
                     print("something error!!!!!!!!!!!!!! ")
                     self.traceback()
-
+            if self.stoped:
+                break
             if self.cbRx.isChecked(): #Rx
                 iWait = 0
                 try:
@@ -463,7 +471,8 @@ class MainWindow(QMainWindow):
                 except:
                     print("something error!!!!!!!!!!!!!! ")
                     self.traceback()
-
+            if self.stoped:
+                break
             if self.cbTxRx.isChecked(): #TxRx
                 iWait = 0
                 try:

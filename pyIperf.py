@@ -194,11 +194,10 @@ class iperf3(QObject):
     __VERSION__ = '20170816'
     
     signal_result = pyqtSignal(int, str)
+    signal_finished = pyqtSignal(int, str)
     signal_error = pyqtSignal(str, str)
     signal_debug = pyqtSignal(str, str)
-    
-    signal_finished = pyqtSignal(int, str)
-    
+      
     default_port = 5201
     
     def __init__(self, host='', port=5201, isServer=True, parent=None):
@@ -223,6 +222,7 @@ class iperf3(QObject):
             self.host = host
         self.port = port
         self.stoped = False #user stop
+        
         self.sCmd= []
         if isServer:
             self.setServerCmd()
@@ -283,6 +283,10 @@ class iperf3(QObject):
         else:
             return -1
         
+    def isRunning(self):
+        print("stoped: %s" % self.stoped)
+        return not self.stoped
+        
     @pyqtSlot()
     def do_stop(self):
         ''' stop the thread  '''
@@ -304,7 +308,7 @@ class iperf3(QObject):
         while not self.exiting:
             try:
                 if len(self.sCmd)>0:
-                    print("sCmd: %s type %s" % (self.sCmd, type(self.sCmd)))
+                    print("sCmd: %s" % (" ".join(self.sCmd)))
                     #following will have extra shell to launch app
                     #self.proc = subprocess.Popen(' '.join(self.sCmd), shell=True,
                     #
@@ -448,7 +452,7 @@ class Server(iperf3):
         self.signal_finished.emit(iCode, msg) 
         
     def isRunning(self):
-        #self.log('0', "thread running: %s" % self.RxIperfTh.isRunning())
+        #TODO: Tx!!Rx!!
         return self.RxIperfTh.isRunning()
 
     
@@ -457,6 +461,8 @@ class Client(iperf3):
 
     signal_result = pyqtSignal(int, int, int, str)
     signal_finished = pyqtSignal(int, str)
+    signal_error = pyqtSignal(str, str)
+    signal_debug = pyqtSignal(str, str)
 
     def __init__(self, host='127.0.0.1', port=5201, iRow=0, iCol=0):
         super(Client, self).__init__()
@@ -470,8 +476,8 @@ class Client(iperf3):
         #self.p = []
         
         self.tIperf = iperf3(port=self.port, isServer=False)
-        self.tIperf.signal_debug.connect(self.log)
-        self.tIperf.signal_error.connect(self.log)
+        self.tIperf.signal_debug.connect(self.debug)
+        self.tIperf.signal_error.connect(self.error)
         self.tIperf.signal_result.connect(self.result)
         self.tIperf.signal_finished.connect(self.finished)
         #self.TxIperf.signal_scanning.connect(self.doScanning)
@@ -484,6 +490,14 @@ class Client(iperf3):
     def setRowCol(self, Row, Col):
         self.row = Row
         self.col = Col
+    
+    @pyqtSlot(str,str)
+    def error(self, sType, sMsg):
+        self.signal_error.emit(sType, sMsg)
+        
+    @pyqtSlot(str,str)
+    def debug(self, sType, sMsg):
+        self.signal_debug.emit(sType, sMsg)
         
     @pyqtSlot(int,str)
     def result(self, iType, msg):
@@ -575,8 +589,9 @@ class Client(iperf3):
                 pass
     '''
     def isRunning(self):
-        self.log('0', "client thread running: %s" % self.IperfTh.isRunning())
-        return self.IperfTh.isRunning()
+        st = self.tIperf.isRunning() and self.IperfTh.isRunning()
+        #print("client is running: %s" % (st))
+        return st
     
     def stop(self):
         #self.log(self.__class__.__name__, self.RxIperf.getPID())
