@@ -117,7 +117,7 @@
               <item>
                <widget class="QComboBox" name="comboBoxFormat">
                 <property name="currentText">
-                 <string>M</string>
+                 <string>k</string>
                 </property>
                 <item>
                  <property name="text">
@@ -1163,6 +1163,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="pbSave">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>Save</string>
              </property>
@@ -1218,7 +1221,7 @@
      <x>0</x>
      <y>0</y>
      <width>637</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">
@@ -1233,6 +1236,20 @@
     </property>
     <addaction name="actionStop"/>
    </widget>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionSave"/>
+   </widget>
+   <widget class="QMenu" name="menuOption">
+    <property name="title">
+     <string>Option</string>
+    </property>
+    <addaction name="actionConfig"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuOption"/>
    <addaction name="menuServer"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -1245,6 +1262,19 @@
   <action name="actionStop">
    <property name="text">
     <string>stop</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionConfig">
+   <property name="text">
+    <string>Config</string>
    </property>
   </action>
  </widget>

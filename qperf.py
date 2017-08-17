@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.settings = QSettings('qperf.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
         
+        self.preventSystemShutdown = False; #when result is not saved!!
         self.stoped = False
         
         if getattr( sys, 'frozen', False ) :
@@ -120,12 +121,15 @@ class MainWindow(QMainWindow):
         
         self.pbStart.clicked.connect(self.startClient)
         self.pbStop.clicked.connect(self.stopClient)
-        self.pbSave.clicked.connect(self.saveResult)
+        #self.pbSave.clicked.connect(self.saveResult)
+        self.pbSave.clicked.connect(self.actionSave.trigger)
         self.pbClear.clicked.connect(self.clearResult)
         #action
         self.actionAbout.triggered.connect(self.showAbout)
-        #self.actionStop.triggered.connect(self.stopServer) #not work
+        self.actionSave.triggered.connect(self.saveResult)
+        self.actionSave.changed.connect(self.setResultChange)
         
+        self.tableResult.cellChanged.connect(self.tableResultChanged)
         #indexOfChecked = [self.gbProtocal.buttons()[x].isChecked() for x in range(len(self.gbProtocal.buttons()))].index(True)
         #print(indexOfChecked)
         #load setting
@@ -148,7 +152,23 @@ class MainWindow(QMainWindow):
         
         QMessageBox.information(self, "About - %s" % self.windowTitle(), 
                                 sVer, QMessageBox.Ok)
-        
+    
+    @pyqtSlot(int,int)
+    def tableResultChanged(self, iRow, iCol):
+        if not self.actionSave.isEnabled():
+            self.actionSave.setEnabled(True)
+
+        if not self.pbClear.isEnabled():
+            self.pbClear.setEnabled(True)
+                
+    @pyqtSlot()            
+    def setResultChange(self):
+        state = self.actionSave.isEnabled()
+        self.pbSave.setEnabled(state)
+        self.pbClear.setEnabled(state)
+        self.preventSystemShutdown = state
+
+    
     def list_comports(self):
         ''' return system's all serial port name in list'''
         lst = []
@@ -204,7 +224,8 @@ class MainWindow(QMainWindow):
         self.ttEnd.setValue(int(self.settings.value('TurnTableEnd', 360)))
         self.ttStep.setValue(int(self.settings.value('TurnTableStep', 30)))
         
-        #test
+        #test       
+        self.lePlace.setText(self.settings.value('Place', "New place"))
         self.cbTx.setCheckState(int(self.settings.value('Tx', 2)))
         self.cbRx.setCheckState(int(self.settings.value('Rx', 0)))
         self.cbTxRx.setCheckState(int(self.settings.value('TxRx', 0)))
@@ -236,7 +257,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue('TurnTableStep', self.ttStep.text())
         
         #test
-
+        self.settings.setValue('Place', self.lePlace.text())
         self.settings.setValue('Tx', self.cbTx.checkState())
         self.settings.setValue('Rx', self.cbRx.checkState())
         self.settings.setValue('TxRx', self.cbTxRx.checkState())
@@ -248,7 +269,9 @@ class MainWindow(QMainWindow):
         #v= self.s.version()
         #self.log('0', v)
 
-
+    def setStop(self, bState):
+        self.stoped = bState
+        
     @pyqtSlot(int, str)
     def parserServerReult(self, iType, msg):
         #TODO: parserServerReult
@@ -260,6 +283,9 @@ class MainWindow(QMainWindow):
         #print("%s , %s - %s" % (row, col, val))
         self.tableResult.setRowCount(row+1)
         self.tableResult.setItem(row, col, QTableWidgetItem(val))
+        itm = self.tableResult.item(row, col)
+        if itm:
+            self.tableResult.scrollToItem(itm, QAbstractItemView.PositionAtCenter)
         pass 
            
     @pyqtSlot(int, int, int, str)
@@ -319,6 +345,7 @@ class MainWindow(QMainWindow):
     def setRunning(self, bStatus):
         self.pbStart.setEnabled(not bStatus)
         self.pbStop.setEnabled(bStatus)
+        self.setStop(not bStatus)
     
     @pyqtSlot(bool)    
     def stopClient(self, isCheck):
@@ -464,8 +491,14 @@ class MainWindow(QMainWindow):
         #self.setRunning(False)
     
     def clearResult(self):
-        for i in reversed(range(self.tableResult.rowCount())):
-            self.tableResult.removeRow(i)
+        msg = 'All Test result will be clear! \nAre you sure to clear it now?'
+        rs = QMessageBox.information(self, 'Warning', msg
+                                , QMessageBox.Ok | QMessageBox.Cancel,
+                                QMessageBox.Cancel)
+        if rs == QMessageBox.Ok:
+            for i in reversed(range(self.tableResult.rowCount())):
+                self.tableResult.removeRow(i)
+            self.actionSave.setEnabled(False)
             
     def saveResult(self):
         filename,ext = QFileDialog.getSaveFileName(
@@ -488,8 +521,11 @@ class MainWindow(QMainWindow):
                     writer.writerow(rowdata)
             stream.close()         
 
+
+
     def closeEvent(self, event):
-        self.stoped = True
+        #self.stoped = True
+        self.setStop(True)
         if self.s.isRunning():
             print('server still running, stop it')
             self.s.stop()
