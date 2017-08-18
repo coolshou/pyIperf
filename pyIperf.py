@@ -318,11 +318,18 @@ class iperf3(QObject):
                     child = pexpect.spawn(" ".join(self.sCmd))
                     atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
                     while child.isalive():
-                        for line in child:
-                            rs = line.rstrip().decode("utf-8")
-                            if rs:
-                                print("%s" % (rs))                            
-                                self.signal_result.emit(self.iParallel, rs) #output result
+                        try:
+                            line = child.readline()
+                            if line == 0:
+                                time.sleep(0.1)
+                            else:
+                            #for line in child: #time out problem
+                                rs = line.rstrip().decode("utf-8")
+                                if rs:
+                                    print("%s" % (rs))                            
+                                    self.signal_result.emit(self.iParallel, rs) #output result
+                        except pexpect.TIMEOUT:
+                            pass            
                 else:
                     self.log('0',"wait for command!!")
                     pass
