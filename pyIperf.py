@@ -236,7 +236,11 @@ class iperf3(QObject):
         #self.log(0, 'kill')
         #self.kill(self.proc.pid)
         pass
-    
+
+    def setTartgetHost(self, host, port):
+        self.host = host
+        self.port = port    
+
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
@@ -510,7 +514,7 @@ class Client(iperf3):
 
     signal_result = pyqtSignal(int, int, int, str)
     signal_finished = pyqtSignal(int, str)
-    signal_error = pyqtSignal(str, str)
+    signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
 
     def __init__(self, host='127.0.0.1', port=5201, iRow=0, iCol=0):
@@ -542,7 +546,7 @@ class Client(iperf3):
     
     @pyqtSlot(str,str)
     def error(self, sType, sMsg):
-        self.signal_error.emit(sType, sMsg)
+        self.signal_error.emit(self.row, self.col, sType, sMsg)
         
     @pyqtSlot(str,str)
     def debug(self, sType, sMsg):
@@ -593,7 +597,7 @@ class Client(iperf3):
 
         if iMTU:
             self.sCmd.append('-M')
-            self.sCmd.append(str(iWindowSize))
+            self.sCmd.append(str(iMTU))
             
         #TODO: -4, --version4            only use IPv4
         #TODO: -6, --version6            only use IPv6

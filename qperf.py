@@ -349,18 +349,21 @@ class MainWindow(QMainWindow):
         if not self.teLog is None:
             self.teLog.append(sMsg)
             
-    @pyqtSlot(str,str)
-    def error(self, sType, sMsg):
+    @pyqtSlot(int, int, str,str)
+    def error(self, iRow, iCol, sType, sMsg):
         print("error: %s = %s" % (sType, sMsg))
         if not self.teLog is None:
             self.teLog.append(sMsg)
-            
+        self.updateData( iRow, iCol, "%s" % (sMsg))
+        self.errorStoped = True
+        
     def setRunning(self, bStatus):
         self.pbStart.setEnabled(not bStatus)
         self.pbStop.setEnabled(bStatus)
         self.setStop(not bStatus)
         self.actionConfig.setEnabled(not bStatus)
-    
+        self.errorStoped = not bStatus
+
     @pyqtSlot(bool)    
     def stopClient(self, isCheck):
         if self.txC:
@@ -448,6 +451,7 @@ class MainWindow(QMainWindow):
                 iWait = 0
                 try:
                     self.txC.setRowCol(iRow, columnResult.colTx.value)
+                    self.txC.setTartgetHost(host, port)
                     self.txC.setClientCmd(sFormat, isUDP, duration, parallel, 
                                           not bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
@@ -459,17 +463,18 @@ class MainWindow(QMainWindow):
                         time.sleep(1)
                         QApplication.processEvents() 
                         iWait = iWait + 1
-                        if self.stoped:
+                        if self.stoped or self.errorStoped:
                             break
                 except:
                     print("something error!!!!!!!!!!!!!! ")
                     self.traceback()
-            if self.stoped:
+            if self.stoped or self.errorStoped:
                 break
             if self.cbRx.isChecked(): #Rx
                 iWait = 0
                 try:
                     self.rxC.setRowCol(iRow, columnResult.colRx.value)
+                    self.rxC.setTartgetHost(host, port)
                     self.rxC.setClientCmd(sFormat, isUDP, duration, parallel,
                                           bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
@@ -481,12 +486,12 @@ class MainWindow(QMainWindow):
                         time.sleep(1)
                         QApplication.processEvents() 
                         iWait = iWait + 1
-                        if self.stoped:
+                        if self.stoped or self.errorStoped:
                             break
                 except:
                     print("something error!!!!!!!!!!!!!! ")
                     self.traceback()
-            if self.stoped:
+            if self.stoped or self.errorStoped:
                 break
             if self.cbTxRx.isChecked(): #TxRx
                 iWait = 0
@@ -498,7 +503,7 @@ class MainWindow(QMainWindow):
                         time.sleep(1)
                         QApplication.processEvents() 
                         iWait = iWait + 1
-                        if self.stoped:
+                        if self.stoped or self.errorStoped:
                             break
                 except:
                     print("something error!!!!!!!!!!!!!! ")
@@ -506,7 +511,7 @@ class MainWindow(QMainWindow):
                     
             self.logToFile("\n")
             iRow= iRow + 1
-            if self.stoped:
+            if self.stoped or self.errorStoped:
                 break
             
         print("finish")
@@ -515,11 +520,14 @@ class MainWindow(QMainWindow):
         #self.setRunning(False)
     
     def clearResult(self):
-        msg = 'All Test result will be clear! \nAre you sure to clear it now?'
-        rs = QMessageBox.information(self, 'Warning', msg
-                                , QMessageBox.Ok | QMessageBox.Cancel,
-                                QMessageBox.Cancel)
-        if rs == QMessageBox.Ok:
+        msgBox = QMessageBox()
+        msgBox.setText("Warning all test result will be delete")
+        msgBox.setInformativeText("Do you really want to clear all result?")
+        msgBox.addButton(QMessageBox.Yes)
+        msgBox.addButton(QMessageBox.No)
+        msgBox.setDefaultButton(QMessageBox.No)
+        ret = msgBox.exec_()
+        if ret == QMessageBox.Yes:
             for i in reversed(range(self.tableResult.rowCount())):
                 self.tableResult.removeRow(i)
             self.actionSave.setEnabled(False)
@@ -533,6 +541,17 @@ class MainWindow(QMainWindow):
             
             with open(filename, 'w') as stream:
                 writer = csv.writer(stream)
+                #header
+                colHeaderdata = []
+                for col in range(self.tableResult.columnCount()):
+                    item = self.tableResult.horizontalHeaderItem(col)
+                    if item is not None:
+                        print(item.text())
+                        colHeaderdata.append(item.text())
+                    else:
+                        colHeaderdata.append('')
+                writer.writerow(colHeaderdata)
+                #result
                 for row in range(self.tableResult.rowCount()):
                     rowdata = []
                     for column in range(self.tableResult.columnCount()):
@@ -544,8 +563,6 @@ class MainWindow(QMainWindow):
                     print("rowdata: %s" % rowdata)
                     writer.writerow(rowdata)
             stream.close()         
-
-
 
     def closeEvent(self, event):
         #self.stoped = True
