@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
         dialog.ui = dlgConfig()
         dialog.ui.setupUi(dialog)
         dialog.exec_()
-        dialog.show()
+        dialog.show() #show module, wait use apply setting?
         
     @pyqtSlot()
     def showAbout(self):
@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
         self.sbWindowSize.setValue(int(self.settings.value('WindowSize', 0)))
         idx = self.comboWindowSizeUnit.findText(self.settings.value('WindowSizeUnit', 'K') , Qt.MatchFixedString)
         self.comboWindowSizeUnit.setCurrentIndex(idx)
-        self.sbMTU.setValue(int(self.settings.value('MTU', 40)))
+        self.sbMTU.setValue(int(self.settings.value('MTU', 0)))
         self.sbBitrate.setValue(int(self.settings.value('Bitrate', 0)))
         idx = self.comboBitrateUnit.findText(self.settings.value('BitrateUnit', 'K') , Qt.MatchFixedString)
         self.comboBitrateUnit.setCurrentIndex(idx)
@@ -284,6 +284,7 @@ class MainWindow(QMainWindow):
         #self.log('0', v)
 
     def setStop(self, bState):
+        print("setStop: %s" % bState )
         self.stoped = bState
         
     @pyqtSlot(int, str)
@@ -420,9 +421,11 @@ class MainWindow(QMainWindow):
             self.txC.signal_finished.connect(self.finish)
             self.txC.signal_error.connect(self.error)
             self.txC.signal_debug.connect(self.debug)
-        print("tx : %s" % self.txC.isRunning())
+
         if not self.txC.isRunning():
+            print("tx : %s" % self.txC.isRunning())
             self.txC.startTest()
+            print("check tx : %s" % self.txC.isRunning())
             
         if not self.rxC:
             self.rxC = Client(host, port)
@@ -430,10 +433,11 @@ class MainWindow(QMainWindow):
             self.rxC.signal_finished.connect(self.finish)
             self.rxC.signal_error.connect(self.error)
             self.rxC.signal_debug.connect(self.debug)
-        print("rx : %s" % self.rxC.isRunning())
         if not self.rxC.isRunning():
+            print("rx : %s" % self.rxC.isRunning())
             self.rxC.startTest()
-
+            print("check rx : %s" % self.rxC.isRunning())
+    
         #cmd = []
         for degree in range(self.ttStart.value(),self.ttEnd.value(), self.ttStep.value()):
             print("TODO: TurnTable control!! %s" % degree)
@@ -453,7 +457,7 @@ class MainWindow(QMainWindow):
                     self.txC.setRowCol(iRow, columnResult.colTx.value)
                     self.txC.setTartgetHost(host, port)
                     self.txC.setClientCmd(sFormat, isUDP, duration, parallel, 
-                                          not bReverse, iBitrate, sBitrateUnit,
+                                          bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)
                     #cmd.append([degree, iRow, columnResult.colTx.value, self.txC.sCmd])
@@ -476,7 +480,7 @@ class MainWindow(QMainWindow):
                     self.rxC.setRowCol(iRow, columnResult.colRx.value)
                     self.rxC.setTartgetHost(host, port)
                     self.rxC.setClientCmd(sFormat, isUDP, duration, parallel,
-                                          bReverse, iBitrate, sBitrateUnit,
+                                          not bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)
                     #cmd.append([degree, iRow, columnResult.colTx.value, self.txC.sCmd])
