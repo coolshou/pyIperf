@@ -17,14 +17,17 @@ from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
                           QMutex, Qt, QFileInfo)
 from PyQt5.QtWidgets import (QApplication, QMainWindow,  QSystemTrayIcon,
                              QErrorMessage, QMessageBox, QAbstractItemView,
-                             QTableWidgetItem, QFileDialog)
-from PyQt5.QtGui import (QIcon, QStandardItemModel)
+                             QTableWidgetItem, QFileDialog, QDialog)
+from PyQt5.QtGui import (QIcon, QStandardItemModel )
 from PyQt5.uic import loadUi
+
 import logging
 import serial
 import serial.tools.list_ports as list_ports
 
 from pyIperf import Server, Client, iperfResult
+from dlgConfig import Ui_Dialog as dlgConfig
+
 
 class QtHandler(logging.Handler):
     def __init__(self):
@@ -97,6 +100,7 @@ class MainWindow(QMainWindow):
             os.mkdir(self.logFilePath)
             
         ui_main = os.path.join(bundle_dir, 'qperf.ui') #load UI
+        self.ui_config = os.path.join(bundle_dir, 'dlgConfig.ui') #load UI
         icon_main = os.path.join(bundle_dir, 'images', 'qperf.png')
         loadUi(ui_main,self)
         self.setWindowTitle("%s(%s) - %s" % ("qperf", "pyIperf", self.__VERSION__))        
@@ -128,7 +132,7 @@ class MainWindow(QMainWindow):
         self.actionAbout.triggered.connect(self.showAbout)
         self.actionSave.triggered.connect(self.saveResult)
         self.actionSave.changed.connect(self.setResultChange)
-        
+        self.actionConfig.triggered.connect(self.showConfig)
         self.tableResult.cellChanged.connect(self.tableResultChanged)
         #indexOfChecked = [self.gbProtocal.buttons()[x].isChecked() for x in range(len(self.gbProtocal.buttons()))].index(True)
         #print(indexOfChecked)
@@ -143,6 +147,16 @@ class MainWindow(QMainWindow):
             self.s.stop()
         pass
 
+    @pyqtSlot()
+    def showConfig(self):
+        #show config
+        dialog = QDialog()
+        #dialog.loadUi(self.ui_config)
+        dialog.ui = dlgConfig()
+        dialog.ui.setupUi(dialog)
+        dialog.exec_()
+        dialog.show()
+        
     @pyqtSlot()
     def showAbout(self):
         #print("showAbout")
@@ -345,6 +359,7 @@ class MainWindow(QMainWindow):
         self.pbStart.setEnabled(not bStatus)
         self.pbStop.setEnabled(bStatus)
         self.setStop(not bStatus)
+        self.actionConfig.setEnabled(not bStatus)
     
     @pyqtSlot(bool)    
     def stopClient(self, isCheck):
