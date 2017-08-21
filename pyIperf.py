@@ -22,7 +22,40 @@ from PyQt5.QtWidgets import (QApplication)
 import logging
 import psutil
 import atexit
-import pexpect
+if platform.system() == 'Linux':
+    import pexpect
+#from asyncproc import Process
+
+from threading  import Thread
+try:
+    from queue import Queue, Empty  # python 3.x
+except ImportError:
+    from Queue import Queue, Empty
+
+ON_POSIX = 'posix' in sys.builtin_module_names
+
+def enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    #out.close()
+
+def process_output(myprocess): #output-consuming thread
+    nextline = None
+    buf = ''
+    while True:
+        #--- extract line using read(1)
+        out = myprocess.stdout.read(1)
+        if out == '' and myprocess.poll() != None: break
+        if out != '':
+            buf += out.decode("utf-8")
+            if out == '\n':
+                nextline = buf
+                buf = ''
+        if not nextline: continue
+        line = nextline
+        nextline = None
+    print(line)
+        
 #from nonblock import nonblock_read
 #import io
 #from threading  import Thread
@@ -299,7 +332,7 @@ class iperf3(QObject):
         self.stoped = True
         self.sCmd.clear()
         locker.unlock()
-
+    '''
     @pyqtSlot()
     def task(self):
         #pexpect way to run program
@@ -315,21 +348,43 @@ class iperf3(QObject):
             try:
                 if len(self.sCmd)>0:
                     print("sCmd: %s" % (" ".join(self.sCmd)))
-                    child = pexpect.spawn(" ".join(self.sCmd))
-                    atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
-                    while child.isalive():
-                        try:
-                            line = child.readline()
-                            if line == 0:
-                                time.sleep(0.1)
-                            else:
-                            #for line in child: #time out problem
-                                rs = line.rstrip().decode("utf-8")
-                                if rs:
-                                    print("%s" % (rs))                            
-                                    self.signal_result.emit(self.iParallel, rs) #output result
-                        except pexpect.TIMEOUT:
-                            pass            
+                    p = subprocess.Popen(self.sCmd, bufsize=1, 
+                              stdout=subprocess.PIPE, 
+                              stderr=subprocess.STDOUT,
+                              close_fds=ON_POSIX)
+                    #q = Queue()
+                    #t = Thread(target=process_output, args=(p.stdout, q)) #output-consuming thread
+                    t = Thread(target=process_output, args=[p]) #output-consuming thread
+                    t.daemon = True # thread dies with the program
+                    t.start()
+                    #--- do whatever here and then kill process and thread if needed
+                    if p.poll() == None: #kill process; will automatically stop thread
+                        p.kill()
+                        p.wait()
+                    if t and t.is_alive(): #wait for thread to finish
+                        t.join()
+                    
+                    # read line without blocking
+                    #try:  line = q.get_nowait() # or q.get(timeout=.1)
+                    #except Empty:
+                    #    print('no output yet')
+                    #else: # got line
+                    #    # ... do something with line
+                    
+                    #
+                    #child = Process(" ".join(self.sCmd))
+
+                    #while True:
+                        # check to see if process has ended
+                    #    poll = child.wait(os.WNOHANG)
+                    #    if poll != None:
+                    #        break
+                        # print any new output
+                    #    out = child.read()
+                    #    if out != "":
+                    #        #print out
+                    #        print(out)
+                    
                 else:
                     self.log('0',"wait for command!!")
                     pass
@@ -358,6 +413,7 @@ class iperf3(QObject):
     '''
     @pyqtSlot()
     def task(self):
+        #pexpect way to run program, !!!!not work on windows!!!!
         # Note: This is never called directly. It is called by Qt once the
         # thread environment has been set up.
         #exec by QThread.start()
@@ -365,34 +421,87 @@ class iperf3(QObject):
         self.stoped = False        
         self.exiting = False
         self.log('0',"start task")      
+        child = None
         while not self.exiting:
             try:
                 if len(self.sCmd)>0:
-                    print("sCmd: %s" % (" ".join(self.sCmd)))
-                    #following will have extra shell to launch app
-                    #self.proc = subprocess.Popen(' '.join(self.sCmd), shell=True,
-                    #
-                    self.proc = subprocess.Popen(self.sCmd, shell=False,
-                                                 bufsize=1, 
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
-                    atexit.register(self.kill_proc, self.proc) #need this to kill iperf3 procress
-                    
-                    if self.proc is None:
-                        #self.signal_debug.emit(self.__class__.__name__, "command error")
-                        self.signal_finished.emit(-1, "command error") 
-                        return -1
-                    
-                    #do task, wait procress finish
-                    for line in iter(self.proc.stdout.readline, b''):
-                        rs = line.rstrip().decode("utf-8")
-                        if rs:
-                            #print("%s rs: %s" % (datetime.datetime.now(), len(rs)))
-                            #print("iParallel: %s" % self.iParallel)
-                            self.signal_result.emit(self.iParallel, rs) #output result
-                            QApplication.processEvents() 
-                            
-                    #self.proc.wait()
+                    if platform.system() == 'Linux':
+                        print("sCmd: %s" % (" ".join(self.sCmd)))
+                        child = pexpect.spawn(" ".join(self.sCmd))
+                        atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
+                        while child.isalive():
+                            try:
+                                line = child.readline() #non-blocking readline
+                                if line == 0:
+                                    time.sleep(0.1)
+                                else:
+                                #for line in child: #time out problem
+                                    rs = line.rstrip().decode("utf-8")
+                                    if rs:
+                                        print("%s" % (rs))                            
+                                        self.signal_result.emit(self.iParallel, rs) #output result
+                            except pexpect.TIMEOUT:
+                                pass            
+                    elif platform.system() == 'Windows':
+                        #TODO: windows how to output result with realtime!!
+                        # PIPE is not working!!, iperf3 will buffer it
+                        print("sCmd: %s" % (" ".join(self.sCmd)))
+                        #following will have extra shell to launch app
+                        #self.proc = subprocess.Popen(' '.join(self.sCmd), shell=True,
+                        #
+                        child = subprocess.Popen(self.sCmd, shell=False,
+                                                     bufsize=1, 
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
+                        atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
+                        
+                        if child is None:
+                            #self.signal_debug.emit(self.__class__.__name__, "command error")
+                            self.signal_finished.emit(-1, "command error") 
+                            return -1
+                        
+                        q = Queue()
+                        t = Thread(target=enqueue_output, args=(child.stdout, q)) #output-consuming thread
+                        #t = Thread(target=process_output, args=[p]) #output-consuming thread
+                        t.daemon = True # thread dies with the program
+                        t.start()
+                        #--- do whatever here and then kill process and thread if needed
+                        while child.poll() != None:
+                            try:  
+                                line = q.get_nowait() # or q.get(timeout=.1)
+                            except Empty:
+                                print('no output yet')
+                            else: # got line
+                                # ... do something with line
+                                print("line: %s" % line)
+                                pass
+                        
+                        if child.poll() == None: #kill process; will automatically stop thread
+                            child.kill()
+                            child.wait()
+                        if t and t.is_alive(): #wait for thread to finish
+                            t.join()
+                        
+                        # read line without blocking
+                        #try:  line = q.get_nowait() # or q.get(timeout=.1)
+                        #except Empty:
+                        #    print('no output yet')
+                        #else: # got line
+                        #    # ... do something with line
+
+                        '''following will block
+                        #do task, wait procress finish
+                        for line in iter(child.stdout.readline, b''):
+                            rs = line.rstrip().decode("utf-8")
+                            if rs:
+                                #print("%s rs: %s" % (datetime.datetime.now(), len(rs)))
+                                #print("iParallel: %s" % self.iParallel)
+                                self.signal_result.emit(self.iParallel, rs) #output result
+                                QApplication.processEvents() 
+                        '''
+                        #self.proc.wait()
+                    else:
+                        pass
                 else:
                     self.log('0',"wait for command!!")
                     pass
@@ -401,6 +510,9 @@ class iperf3(QObject):
                 raise
             finally:
                 #self.signal_finished.emit(-1, "proc end!!") 
+                #if child:
+                #    if child.isalive():
+                #        child.kill(1)
                 self.log('0',"proc end!!")
                 #atexit.unregister(self.kill_proc)
                 self.sCmd.clear()
@@ -415,7 +527,7 @@ class iperf3(QObject):
         
         self.log(0,"task end!!")
         self.signal_finished.emit(1, "task end!!")
-    '''
+
     def kill_proc(self, proc):
         try:
             proc.terminate()
