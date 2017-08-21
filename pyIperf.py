@@ -26,41 +26,19 @@ if platform.system() == 'Linux':
     import pexpect
 #from asyncproc import Process
 
-from threading  import Thread
-try:
-    from queue import Queue, Empty  # python 3.x
-except ImportError:
-    from Queue import Queue, Empty
-
-ON_POSIX = 'posix' in sys.builtin_module_names
-
-def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
-    #out.close()
-
-def process_output(myprocess): #output-consuming thread
-    nextline = None
-    buf = ''
-    while True:
-        #--- extract line using read(1)
-        out = myprocess.stdout.read(1)
-        if out == '' and myprocess.poll() != None: break
-        if out != '':
-            buf += out.decode("utf-8")
-            if out == '\n':
-                nextline = buf
-                buf = ''
-        if not nextline: continue
-        line = nextline
-        nextline = None
-    print(line)
-        
-#from nonblock import nonblock_read
-#import io
+#Queue
 #from threading  import Thread
-#from queue import Queue, Empty  # python 3.x
+#try:
+#    from queue import Queue, Empty  # python 3.x
+#except ImportError:
+#    from Queue import Queue, Empty
 
+#ON_POSIX = 'posix' in sys.builtin_module_names
+
+#def enqueue_output(out, queue):
+#    for line in iter(out.readline, b''):
+#        queue.put(line)
+    #out.close()
 
   
 def kill(proc_pid):
@@ -221,7 +199,6 @@ class iperfThread(QThread):
         self.exec_()
 
 locker = QMutex()
-ON_POSIX = 'posix' in sys.builtin_module_names
 
 class iperf3(QObject):
     '''python of iperf3 class'''
@@ -277,7 +254,8 @@ class iperf3(QObject):
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
-        out.close()
+        print("enqueue_output:" )
+        #out.close()
     
     def setServerCmd(self):
         '''iperf server command'''
@@ -332,85 +310,7 @@ class iperf3(QObject):
         self.stoped = True
         self.sCmd.clear()
         locker.unlock()
-    '''
-    @pyqtSlot()
-    def task(self):
-        #pexpect way to run program
-        # Note: This is never called directly. It is called by Qt once the
-        # thread environment has been set up.
-        #exec by QThread.start()
-        
-        self.stoped = False        
-        self.exiting = False
-        self.log('0',"start task")      
-        child = None
-        while not self.exiting:
-            try:
-                if len(self.sCmd)>0:
-                    print("sCmd: %s" % (" ".join(self.sCmd)))
-                    p = subprocess.Popen(self.sCmd, bufsize=1, 
-                              stdout=subprocess.PIPE, 
-                              stderr=subprocess.STDOUT,
-                              close_fds=ON_POSIX)
-                    #q = Queue()
-                    #t = Thread(target=process_output, args=(p.stdout, q)) #output-consuming thread
-                    t = Thread(target=process_output, args=[p]) #output-consuming thread
-                    t.daemon = True # thread dies with the program
-                    t.start()
-                    #--- do whatever here and then kill process and thread if needed
-                    if p.poll() == None: #kill process; will automatically stop thread
-                        p.kill()
-                        p.wait()
-                    if t and t.is_alive(): #wait for thread to finish
-                        t.join()
-                    
-                    # read line without blocking
-                    #try:  line = q.get_nowait() # or q.get(timeout=.1)
-                    #except Empty:
-                    #    print('no output yet')
-                    #else: # got line
-                    #    # ... do something with line
-                    
-                    #
-                    #child = Process(" ".join(self.sCmd))
 
-                    #while True:
-                        # check to see if process has ended
-                    #    poll = child.wait(os.WNOHANG)
-                    #    if poll != None:
-                    #        break
-                        # print any new output
-                    #    out = child.read()
-                    #    if out != "":
-                    #        #print out
-                    #        print(out)
-                    
-                else:
-                    self.log('0',"wait for command!!")
-                    pass
-            except:
-                self.traceback()
-                raise
-            finally:
-                #self.signal_finished.emit(-1, "proc end!!") 
-                if child:
-                    if child.isalive():
-                        child.kill(1)
-                self.log('0',"proc end!!")
-                #atexit.unregister(self.kill_proc)
-                self.sCmd.clear()
-                
-            if self.stoped:
-                self.signal_finished.emit(1, "signal_finished!!")
-                break
-            
-            QApplication.processEvents() 
-            time.sleep(2)
-            #self.log(0,"task running...")
-        
-        self.log(0,"task end!!")
-        self.signal_finished.emit(1, "task end!!")
-    '''
     @pyqtSlot()
     def task(self):
         #pexpect way to run program, !!!!not work on windows!!!!
@@ -459,37 +359,8 @@ class iperf3(QObject):
                             #self.signal_debug.emit(self.__class__.__name__, "command error")
                             self.signal_finished.emit(-1, "command error") 
                             return -1
-                        
-                        q = Queue()
-                        t = Thread(target=enqueue_output, args=(child.stdout, q)) #output-consuming thread
-                        #t = Thread(target=process_output, args=[p]) #output-consuming thread
-                        t.daemon = True # thread dies with the program
-                        t.start()
-                        #--- do whatever here and then kill process and thread if needed
-                        while child.poll() != None:
-                            try:  
-                                line = q.get_nowait() # or q.get(timeout=.1)
-                            except Empty:
-                                print('no output yet')
-                            else: # got line
-                                # ... do something with line
-                                print("line: %s" % line)
-                                pass
-                        
-                        if child.poll() == None: #kill process; will automatically stop thread
-                            child.kill()
-                            child.wait()
-                        if t and t.is_alive(): #wait for thread to finish
-                            t.join()
-                        
-                        # read line without blocking
-                        #try:  line = q.get_nowait() # or q.get(timeout=.1)
-                        #except Empty:
-                        #    print('no output yet')
-                        #else: # got line
-                        #    # ... do something with line
 
-                        '''following will block
+                        #following will block
                         #do task, wait procress finish
                         for line in iter(child.stdout.readline, b''):
                             rs = line.rstrip().decode("utf-8")
@@ -498,8 +369,6 @@ class iperf3(QObject):
                                 #print("iParallel: %s" % self.iParallel)
                                 self.signal_result.emit(self.iParallel, rs) #output result
                                 QApplication.processEvents() 
-                        '''
-                        #self.proc.wait()
                     else:
                         pass
                 else:
@@ -730,36 +599,7 @@ class Client(iperf3):
         self.tIperf.stoped = False
         self.IperfTh.start()
         pass
-    '''
-    #following will block main thread
-    def start(self, interval=1, bReverse=False):
-        command = [self.iperf, '-c', self.host,
-                   '-p', str(self.port)]
-        
-        if interval:
-            command.append('-i' + str(interval))
-        if bReverse:
-            command.append('-R')
-            
-        pipe = subprocess.Popen(command, shell=False, bufsize=1, universal_newlines=True,
-                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        
-        while True:
-            data = nonblock_read(pipe.stdout)
-            if data is None:
-                # All data has been processed and subprocess closed stream
-                pipe.wait()
-                break
-            elif data:
-                # Some data has been read, process it
-                #processData(data)
-                print("data: %s" % data)
-            else:
-                # No data is on buffer, but subprocess has not closed stream
-                #idleTask()       
-                #print("wait output")
-                pass
-    '''
+
     def isRunning(self):
         st = self.tIperf.isRunning() and self.IperfTh.isRunning()
         #print("client is running: %s" % (st))
