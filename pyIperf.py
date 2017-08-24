@@ -325,6 +325,7 @@ class iperf3(QObject):
         while not self.exiting:
             try:
                 if len(self.sCmd)>0:
+                    
                     if platform.system() == 'Linux':
                         print("sCmd: %s" % (" ".join(self.sCmd)))
                         child = pexpect.spawn(" ".join(self.sCmd))
@@ -586,7 +587,9 @@ class Client(iperf3):
         if iMTU:
             self.sCmd.append('-M')
             self.sCmd.append(str(iMTU))
-            
+        
+        #self.sCmd.append('--forceflush') # not working on subprocress.PIPE
+        
         #TODO: -4, --version4            only use IPv4
         #TODO: -6, --version6            only use IPv6
 

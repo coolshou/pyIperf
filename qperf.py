@@ -13,13 +13,16 @@ import os
 import time
 import datetime
 from enum import Enum
+import concurrent.futures
 from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
-                          QMutex, Qt, QFileInfo)
+                          QMutex, Qt, QFileInfo, QThread)
 from PyQt5.QtWidgets import (QApplication, QMainWindow,  QSystemTrayIcon,
                              QErrorMessage, QMessageBox, QAbstractItemView,
-                             QTableWidgetItem, QFileDialog, QDialog)
+                             QTableWidgetItem, QFileDialog, QDialog,
+                             QTreeWidgetItem)
 from PyQt5.QtGui import (QIcon, QStandardItemModel )
 from PyQt5.uic import loadUi
+import random #just for test
 
 import logging
 import serial
@@ -77,9 +80,70 @@ class columnResult(Enum):
     colDegree=colPlace+1
     colTx=colDegree+1
     colRx=colTx+1
+
+class iperfColumn(Enum):
+    colName=0
+    colDirection=colName+1
+    colHost=colDirection+1
+    colCmd=colHost+1
+    colAvg=colCmd+1
     
+#a iperf worker thread to handle each running iperf
+class WorkerThread(QThread):
+    progressUpdated = pyqtSignal(int)
+    msgUpdated = pyqtSignal(str,str)
+    finished = pyqtSignal(int,str)
+    updateData = pyqtSignal(int, int, str)
+    
+    def __init__(self, cmds, workers=1):
+        QThread.__init__(self)
+        self.moveToThread(self)
+        self.value = 0
+        self.cmds = cmds
+        self.workers = workers
+
+    def long_task(self, cmds):
+        #print(cmds)
+        cmd = cmds.split(",")
+        row = int(cmd[0])
+        #col = int(cmds[1])
+        cmd = cmd[1]
+        #row =r
+        #col =c
+        #cmd=cmds
+        print("TODO %s, typ %s,  wait %s" % (row,type(row), cmd))
+        time.sleep(10)
+        #TODO: real iperf task
+        val = random.randint(10, 1000)
+        self.updateData.emit(row, 0 , str(val) )     
+        return "%s" % (val)
+        
+    def run(self):
+        #TODO TODO!!!
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
+            # Start the load operations and mark each future with its cmd
+            future_to_url = {executor.submit(self.long_task, cmd): cmd for cmd in self.cmds}
+            self.msgUpdated.emit('0',"%s" % (future_to_url))
+            for future in concurrent.futures.as_completed(future_to_url):
+                url = future_to_url[future]
+                self.msgUpdated.emit('0',"%s: url= %s" % (datetime.datetime.now(), url))
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    #self.msgUpdated.emit('1','%r generated an exception: %s' % ( url, exc))
+                    self.finished.emit(-1 , '%r generated an exception: %s' % ( url, exc))
+                else:
+                    if data:
+                        self.msgUpdated.emit('0','%r page is %d bytes' % (url, len(data)))
+                        self.value += 1
+                        self.progressUpdated.emit(self.value)
+
+        self.progressUpdated.emit(100)
+        self.finished.emit(0, "")
+        
 class MainWindow(QMainWindow):
-    __VERSION__ = "20170816"
+    __VERSION__ = "20170825"
     
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -108,20 +172,27 @@ class MainWindow(QMainWindow):
         #TODO: tabChart (current hide)
         #self.twResult.setTabEnabled(0,False) #enable/disable the tab
         
-        #comport
+        #TODO: turntable: comport
+        '''
         ls_comports = self.list_comports()
         self.comboComPort.addItems(ls_comports)
         ls_baudrates = self.list_baudrates()
         self.comboBaulRate.addItems(ls_baudrates)
+        '''
         #setting
-        self.loadSetting()
-        
+        self.cfgDialog = QDialog(self)
+        self.cfgDialog.ui = dlgConfig()
+        self.cfgDialog.ui.setupUi(self.cfgDialog)
+        self.loadCfgSetting(self.cfgDialog.ui)
+        self.loadSetting()        
         
         #TODO: detect current running iperf3.exe and delete it
         #init server
         self.s = Server()
         self.s.signal_result.connect(self.parserServerReult)
         self.s.signal_debug.connect(self.log)
+        
+        self.pbDoJobs.clicked.connect(self.doJobs)
         
         self.pbStart.clicked.connect(self.startClient)
         self.pbStop.clicked.connect(self.stopClient)
@@ -140,6 +211,8 @@ class MainWindow(QMainWindow):
         self.txC = None
         self.rxC = None
         
+        #dataChanged
+        #self.twIperfs.dataChanged.connect(self.dataChanged)
         
     def __del__(self):
         ''' destructure     '''
@@ -147,15 +220,115 @@ class MainWindow(QMainWindow):
             self.s.stop()
         pass
 
+    def doJobs(self):
+        #create command
+        cmds=[]
+        for idx in range(self.getIperfCount()):
+            root = self.twIperfs.invisibleRootItem() 
+            itm = root.child(idx)
+            #n = itm.text(iperfColumn.colName.value)
+            cmd = itm.text(iperfColumn.colCmd.value)
+            #print("%s - %s" %(idx, cmd))
+            cmds.append("%s , %s" %(idx, cmd))
+
+        print(cmds)
+
+        self.pbDoJobs.setEnabled(False)
+        self.work = WorkerThread(cmds)
+        #TODO: signal handle
+        self.work.progressUpdated.connect(self.progressbar_change)
+        self.work.msgUpdated.connect(self.log)
+        self.work.updateData.connect(self.updateTWData)
+        self.work.finished.connect(self.finish)
+        self.work.start()
+
+    @pyqtSlot(int)
+    def progressbar_change(self, val):
+        self.progressBar.setValue(val)    
+        
+    @pyqtSlot(int, int, str)
+    def updateTWData(self, row, iType, val):
+        print("%s , %s - %s" % (row, iType, val))
+        #self.tableWidget.setRowCount(row+1)
+        if iType==0:
+            root = self.twIperfs.invisibleRootItem() 
+            print("row: %s" %row)
+            itm = root.child(row)
+            if itm:
+                itm.setText(iperfColumn.colAvg.value, val) 
+            #self.tableWidget.setItem(row, iperfColumn.colAvg.value, QTableWidgetItem(val))
+        else:
+            print("#TODO: other type of result")
+            #self.tableWidget.setItem(row, iperfColumn.colAvg.value, QTableWidgetItem(val))
+            
+        pass
+    
+    #def dataChanged(self):
+        #if self.pbDoJobs.is:
+            
+    def getIperfCount(self):
+        root = self.twIperfs.invisibleRootItem()
+        child_count = root.childCount()
+        #print(child_count)
+        return child_count
+    
+    def createIperfCmd(self):
+        #print("TODO: startClient")
+        host = self.cfgDialog.ui.leHost.text()
+        #print("leHost: %s" % host)
+        port = self.cfgDialog.ui.sbPort.value()
+        sFormat = self.cfgDialog.ui.comboBoxFormat.currentText()
+        #print("sbPort: %s" % port)
+        duration = self.cfgDialog.ui.sbDuration.value()
+        #self.progressBar.setMaximum(duration+3)
+        #print("sbDuration: %s" % duration)
+        parallel = self.cfgDialog.ui.spParallel.value()
+        #print("spParallel: %s" % parallel)
+        bReverse = self.cfgDialog.ui.cbReverse.isChecked()
+        #print("cbReverse: %s" % bReverse)
+        if self.cfgDialog.ui.rbTCP.isChecked():
+            isUDP = False
+        else:
+            isUDP = True
+        #
+        #print("TODO: sbWindowSize: %s" % self.sbWindowSize.value())
+        iWindowSize = self.cfgDialog.ui.sbWindowSize.value()
+        sWindowSizeUnit = self.cfgDialog.ui.comboWindowSizeUnit.currentText()
+        iMTU = self.cfgDialog.ui.sbMTU.value()
+        
+        iBitrate = self.cfgDialog.ui.sbBitrate.value()
+        sBitrateUnit = self.cfgDialog.ui.comboBitrateUnit.currentText()
+        
+        return "%s %s %s %s %s %s %s %s %s %s %s %s" % (host, port, sFormat, isUDP, duration, parallel, 
+                bReverse, iBitrate, sBitrateUnit, iWindowSize, sWindowSizeUnit, iMTU)
+    
     @pyqtSlot()
     def showConfig(self):
         #show config
-        dialog = QDialog()
-        #dialog.loadUi(self.ui_config)
-        dialog.ui = dlgConfig()
-        dialog.ui.setupUi(dialog)
-        dialog.exec_()
-        dialog.show() #show module, wait use apply setting?
+        self.loadCfgSetting(self.cfgDialog.ui)
+        rs = self.cfgDialog.exec_() #show module, wait use apply setting?
+        if rs:
+            self.pbDoJobs.setEnabled(True)
+            print("OK")
+            self.saveCfgSetting(self.cfgDialog.ui)
+            #add a iperf item
+            treeItem = QTreeWidgetItem()
+            treeItem.setText(iperfColumn.colName.value, str(self.getIperfCount())) 
+            if self.cfgDialog.ui.cbReverse.isChecked():
+                d = "<---"
+            else:
+                d = "--->"
+            treeItem.setText(iperfColumn.colDirection.value, d) 
+            treeItem.setText(iperfColumn.colHost.value, self.cfgDialog.ui.leHost.text()) 
+            #create command
+            cmd = self.createIperfCmd()            
+            #TODO:real iperf command!!
+            treeItem.setText(iperfColumn.colCmd.value, cmd) 
+            #treeItem.setText(iperfColumn.colAvg.value, self.getIperfCount()) 
+            self.twIperfs.addTopLevelItem(treeItem)
+        #if rs == QDialog.OK:
+        #   
+        #dialog.show() 
         
     @pyqtSlot()
     def showAbout(self):
@@ -202,7 +375,82 @@ class MainWindow(QMainWindow):
                 # print(baudrate)
         return lst
 
+    def loadCfgSetting(self, dlg):
+        dlg.leHost.setText(self.settings.value('Host', "127.0.0.1"))
+        dlg.sbPort.setValue(int(self.settings.value('Port', 5201)))
+        idx = dlg.comboBoxFormat.findText(self.settings.value('Format', 'M') , Qt.MatchFixedString)
+        dlg.comboBoxFormat.setCurrentIndex(idx)
+        dlg.sbDuration.setValue(int(self.settings.value('Duration', 10)))
+        dlg.spParallel.setValue(int(self.settings.value('Parallel', 1)))
+        dlg.cbReverse.setCheckState(int(self.settings.value('Reverse', 0)))
+        
+        protocal = self.settings.value('Protocal', 'TCP')
+        if protocal in 'TCP':
+            dlg.rbTCP.setChecked(True)
+        else:
+            dlg.rbUDP.setChecked(True)
+        dlg.sbWindowSize.setValue(int(self.settings.value('WindowSize', 0)))
+        idx = dlg.comboWindowSizeUnit.findText(self.settings.value('WindowSizeUnit', 'K') , Qt.MatchFixedString)
+        dlg.comboWindowSizeUnit.setCurrentIndex(idx)
+        dlg.sbMTU.setValue(int(self.settings.value('MTU', 0)))
+        dlg.sbBitrate.setValue(int(self.settings.value('Bitrate', 0)))
+        idx = dlg.comboBitrateUnit.findText(self.settings.value('BitrateUnit', 'K') , Qt.MatchFixedString)
+        dlg.comboBitrateUnit.setCurrentIndex(idx)
+        #TurnTable
+        chk = self.settings.value('TurnTable', 0)
+        if chk == 2:
+            dlg.cbTurnTable.setChecked(True)
+        else:
+            dlg.cbTurnTable.setChecked(False)
+        
+        idx = dlg.comboComPort.findText(self.settings.value('ComPort', 'com1') , Qt.MatchFixedString)
+        dlg.comboComPort.setCurrentIndex(idx)
+        idx = dlg.comboBaulRate.findText(self.settings.value('BaulRate', str(115200)) , Qt.MatchFixedString)
+        dlg.comboBaulRate.setCurrentIndex(idx)
+        dlg.ttStart.setValue(int(self.settings.value('TurnTableStart', 0)))
+        dlg.ttEnd.setValue(int(self.settings.value('TurnTableEnd', 360)))
+        dlg.ttStep.setValue(int(self.settings.value('TurnTableStep', 30)))
+        
+        #test       
+        #dlg.lePlace.setText(self.settings.value('Place', "New place"))
+        #dlg.cbTx.setCheckState(int(self.settings.value('Tx', 2)))
+        #dlg.cbRx.setCheckState(int(self.settings.value('Rx', 0)))
+        #dlg.cbTxRx.setCheckState(int(self.settings.value('TxRx', 0)))
+
+    def saveCfgSetting(self, dlg):
+        self.settings.setValue('Host', dlg.leHost.text())
+        self.settings.setValue('Port', dlg.sbPort.text())
+        self.settings.setValue('Format', dlg.comboBoxFormat.currentText())
+        self.settings.setValue('Duration', dlg.sbDuration.text())
+        self.settings.setValue('Parallel', dlg.spParallel.text())
+        self.settings.setValue('Reverse', dlg.cbReverse.checkState())
+        if dlg.rbTCP.isChecked():
+            protocal = 'TCP'
+        else:
+            protocal = 'UDP'
+        self.settings.setValue('Protocal', protocal)
+        #self.gbProtocal.
+        self.settings.setValue('WindowSize', dlg.sbWindowSize.text())
+        self.settings.setValue('WindowSizeUnit', dlg.comboWindowSizeUnit.currentText())
+        self.settings.setValue('MTU', dlg.sbMTU.text())
+        self.settings.setValue('Bitrate', dlg.sbBitrate.text())
+        self.settings.setValue('BitrateUnit', dlg.comboBitrateUnit.currentText())
+        #TurnTable
+        self.settings.setValue('TurnTable', dlg.cbTurnTable.checkState())
+        self.settings.setValue('ComPort', dlg.comboComPort.currentText())
+        self.settings.setValue('BaulRate', dlg.comboBaulRate.currentText())
+        self.settings.setValue('TurnTableStart', dlg.ttStart.text())
+        self.settings.setValue('TurnTableEnd', dlg.ttEnd.text())
+        self.settings.setValue('TurnTableStep', dlg.ttStep.text())
+        
+        #test
+        #self.settings.setValue('Place', self.lePlace.text())
+        #self.settings.setValue('Tx', self.cbTx.checkState())
+        #self.settings.setValue('Rx', self.cbRx.checkState())
+        #self.settings.setValue('TxRx', self.cbTxRx.checkState())        
+    
     def loadSetting(self):
+        '''
         self.leHost.setText(self.settings.value('Host', "127.0.0.1"))
         self.sbPort.setValue(int(self.settings.value('Port', 5201)))
         idx = self.comboBoxFormat.findText(self.settings.value('Format', 'M') , Qt.MatchFixedString)
@@ -237,14 +485,15 @@ class MainWindow(QMainWindow):
         self.ttStart.setValue(int(self.settings.value('TurnTableStart', 0)))
         self.ttEnd.setValue(int(self.settings.value('TurnTableEnd', 360)))
         self.ttStep.setValue(int(self.settings.value('TurnTableStep', 30)))
-        
+        '''
         #test       
         self.lePlace.setText(self.settings.value('Place', "New place"))
         self.cbTx.setCheckState(int(self.settings.value('Tx', 2)))
         self.cbRx.setCheckState(int(self.settings.value('Rx', 0)))
         self.cbTxRx.setCheckState(int(self.settings.value('TxRx', 0)))
-
+    
     def saveSetting(self):
+        '''
         self.settings.setValue('Host', self.leHost.text())
         self.settings.setValue('Port', self.sbPort.text())
         self.settings.setValue('Format', self.comboBoxFormat.currentText())
@@ -269,7 +518,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue('TurnTableStart', self.ttStart.text())
         self.settings.setValue('TurnTableEnd', self.ttEnd.text())
         self.settings.setValue('TurnTableStep', self.ttStep.text())
-        
+        '''
         #test
         self.settings.setValue('Place', self.lePlace.text())
         self.settings.setValue('Tx', self.cbTx.checkState())
