@@ -10,5 +10,12 @@ Require python modules
 # ui modify
 pyuic5 dlgConfig.ui -o dlgConfig.py
 
+# TODO
+ 1. realtime result chart (Linux, Windows)
+ 2. more iperf thread job control
+ 3. -M must 0 or >= 88 (linux)
+ 4. dlgconfig 
+ 
+ 
 # iperf3
  https://github.com/esnet/iperf
