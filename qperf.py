@@ -19,7 +19,7 @@ from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
 from PyQt5.QtWidgets import (QApplication, QMainWindow,  QSystemTrayIcon,
                              QErrorMessage, QMessageBox, QAbstractItemView,
                              QTableWidgetItem, QFileDialog, QDialog,
-                             QTreeWidgetItem)
+                             QTreeWidgetItem, QMenu)
 from PyQt5.QtGui import (QIcon, QStandardItemModel )
 from PyQt5.uic import loadUi
 import random #just for test
@@ -192,6 +192,7 @@ class MainWindow(QMainWindow):
         self.s.signal_result.connect(self.parserServerReult)
         self.s.signal_debug.connect(self.log)
         
+        #button
         self.pbDoJobs.clicked.connect(self.doJobs)
         
         self.pbStart.clicked.connect(self.startClient)
@@ -205,6 +206,10 @@ class MainWindow(QMainWindow):
         self.actionSave.changed.connect(self.setResultChange)
         self.actionConfig.triggered.connect(self.showConfig)
         self.tableResult.cellChanged.connect(self.tableResultChanged)
+        
+        #menu
+        self.twIperfs.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.twIperfs.customContextMenuRequested.connect(self.iperfMenu)
         #indexOfChecked = [self.gbProtocal.buttons()[x].isChecked() for x in range(len(self.gbProtocal.buttons()))].index(True)
         #print(indexOfChecked)
         #load setting
@@ -218,8 +223,34 @@ class MainWindow(QMainWindow):
         ''' destructure     '''
         if self.s.isRunning():
             self.s.stop()
-        pass
 
+    def iperfMenu(self, position):
+        indexes = self.twIperfs.selectedIndexes()
+        if len(indexes) > 0:
+            bExist=True
+        else:
+            bExist=False
+        menu = QMenu()
+        menu.addAction(self.tr("Add"), self.actAddIperf)
+        actEdit = menu.addAction(self.tr("Edit"), self.actEditIperf)
+        actEdit.setEnabled(bExist)
+        actDel = menu.addAction(self.tr("Delete"), self.actDelIperf)
+        actDel.setEnabled(bExist)
+        menu.exec_(self.twIperfs.viewport().mapToGlobal(position))
+        
+    def actAddIperf(self):
+        self.showConfig()
+        
+    def actEditIperf(self):
+        print("TODO: actEditIperf ")
+        pass
+    
+    def actDelIperf(self):
+        items = self.twIperfs.selectedItems()
+        for itm in items:
+            idx = self.twIperfs.indexOfTopLevelItem(itm)
+            self.twIperfs.takeTopLevelItem(idx)
+            
     def doJobs(self):
         #create command
         cmds=[]

@@ -18,17 +18,20 @@
     <item>
      <widget class="QWidget" name="widget_9" native="true">
       <layout class="QHBoxLayout" name="horizontalLayout_10">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="leftMargin">
-        <number>2</number>
+        <number>3</number>
        </property>
        <property name="topMargin">
-        <number>2</number>
+        <number>3</number>
        </property>
        <property name="rightMargin">
-        <number>2</number>
+        <number>3</number>
        </property>
        <property name="bottomMargin">
-        <number>2</number>
+        <number>3</number>
        </property>
        <item>
         <widget class="QLabel" name="label_4">
@@ -51,19 +54,19 @@
      <widget class="QWidget" name="widget" native="true">
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <property name="spacing">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="leftMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="topMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <item>
         <widget class="QWidget" name="widget_3" native="true">
@@ -130,6 +133,9 @@
            </property>
            <item>
             <widget class="QTreeWidget" name="twIperfs">
+             <property name="selectionMode">
+              <enum>QAbstractItemView::MultiSelection</enum>
+             </property>
              <column>
               <property name="text">
                <string>Name</string>
@@ -172,17 +178,20 @@
     <item>
      <widget class="QWidget" name="widget_2" native="true">
       <layout class="QVBoxLayout" name="verticalLayout_5">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="leftMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="topMargin">
-        <number>9</number>
+        <number>3</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>3</number>
        </property>
        <item>
         <widget class="QWidget" name="widget_Direction" native="true">
