@@ -212,7 +212,7 @@ class iperf3(QObject):
     default_port = 5201
     
     def __init__(self, host='', port=5201, isServer=True, parent=None):
-        super(iperf3, self).__init__(None)
+        super(iperf3, self).__init__(parent)
         #iperf binary
         if platform.machine() in ['i386','i486','i586', 'i686']:
             arch='x86'
@@ -428,8 +428,8 @@ class Server(iperf3):
     signal_result = pyqtSignal(int, str)
     signal_finished = pyqtSignal(int, str)
     
-    def __init__(self, host='127.0.0.1', port=5201):
-        super(Server, self).__init__()
+    def __init__(self, host='127.0.0.1', port=5201, parent=None):
+        super(Server, self).__init__(parent)
         
         self.host = host
         self.port = port
@@ -461,10 +461,6 @@ class Server(iperf3):
         self.RxIperfTh.started.connect(self.RxIperf.task)
         self.RxIperfTh.start()
         
-    def __del__(self):
-        #self.stop()
-        pass
-    
     def stop(self):
         #self.log(self.__class__.__name__, self.RxIperf.getPID())
         self.TxIperf.do_stop()
@@ -505,8 +501,9 @@ class Client(iperf3):
     signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
 
-    def __init__(self, host='127.0.0.1', port=5201, iRow=0, iCol=0):
-        super(Client, self).__init__()
+    def __init__(self, host='127.0.0.1', port=5201,
+                 iRow=0, iCol=0, parent=None):
+        super(Client, self).__init__(parent)
         #index for report
         self.row = iRow
         self.col = iCol
