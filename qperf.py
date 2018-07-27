@@ -25,7 +25,7 @@ import logging
 import serial
 import serial.tools.list_ports as list_ports
 
-from pyIperf import Server, Client, iperfResult
+from pyIperf import IperfServer, IperfClient, iperfResult
 from dlgConfig import Ui_Dialog as dlgConfig
 
 
@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
         
         #TODO: detect current running iperf3.exe and delete it
         #init server
-        self.s = Server()
+        self.s = IperfServer()
         self.s.signal_result.connect(self.parserServerReult)
         self.s.signal_debug.connect(self.log)
         
@@ -416,7 +416,7 @@ class MainWindow(QMainWindow):
         #test Tx
         #self.txC = Client(host, port, iRow, columnResult.colTx.value)
         if not self.txC:
-            self.txC = Client(host, port)
+            self.txC = IperfClient(host, port)
             self.txC.signal_result.connect(self.parserReult)
             self.txC.signal_finished.connect(self.finish)
             self.txC.signal_error.connect(self.error)
@@ -428,7 +428,7 @@ class MainWindow(QMainWindow):
             print("check tx : %s" % self.txC.isRunning())
             
         if not self.rxC:
-            self.rxC = Client(host, port)
+            self.rxC = IperfClient(host, port)
             self.rxC.signal_result.connect(self.parserReult)
             self.rxC.signal_finished.connect(self.finish)
             self.rxC.signal_error.connect(self.error)

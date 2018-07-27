@@ -8,7 +8,7 @@ Created on Tue Jul 18 13:45:15 2017
 '''
     subprocrss base iperf3 python class
 '''
-__version__ = "20170718"
+__version__ = "20180727"
 
 import time
 import sys
@@ -194,15 +194,15 @@ class iperfResult():
         return size.split(" ")
 
 
-class iperfThread(QThread):
+class IperfThread(QThread):
     def run(self):
         self.exec_()
 
 locker = QMutex()
 
-class iperf3(QObject):
-    '''python of iperf3 class'''
-    __VERSION__ = '20170816'
+class Iperf(QObject):
+    '''python of iperf2/iperf3 class'''
+    __VERSION__ = '20180726'
     
     signal_result = pyqtSignal(int, str)
     signal_finished = pyqtSignal(int, str)
@@ -211,21 +211,26 @@ class iperf3(QObject):
       
     default_port = 5201
     
-    def __init__(self, host='', port=5201, isServer=True, parent=None):
-        super(iperf3, self).__init__(parent)
+    def __init__(self, host='', port=5201, isServer=True, iperfver=3,  parent=None):
+        super(Iperf, self).__init__(parent)
         #iperf binary
         if platform.machine() in ['i386','i486','i586', 'i686']:
             arch='x86'
         else:
             arch=platform.machine()
 
+        if iperfver==3:
+            iperfname="iperf3"
+        else:
+            iperfname="iperf"
+            
         self.iperf = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                   'bin', platform.system())
         if platform.system() == 'Linux':
-            self.iperf = os.path.join(self.iperf, arch, 'iperf3')
+            self.iperf = os.path.join(self.iperf, arch, '%s' % iperfname)
             
         if platform.system() == 'Windows':
-            self.iperf = os.path.join(self.iperf, 'iperf3.exe')
+            self.iperf = os.path.join(self.iperf, '%s.exe' % iperfname)
             #self.iperf = self.iperf + '.exe'
         
         #print("use iperf: %s" % self.iperf)
@@ -421,42 +426,42 @@ class iperf3(QObject):
                                "%s - %s - Line: %s" % (exc_type, exc_obj, lineno))
 
        
-class Server(iperf3):
+class IperfServer(Iperf):
     """ A network testing server that can start an iperf3 
     server on any given port."""
     #int: type, str: message
     signal_result = pyqtSignal(int, str)
     signal_finished = pyqtSignal(int, str)
     
-    def __init__(self, host='127.0.0.1', port=5201, parent=None):
-        super(Server, self).__init__(parent)
+    def __init__(self, host='127.0.0.1', port=5201, iperfver=3, parent=None):
+        super(IperfServer, self).__init__(parent)
         
         self.host = host
         self.port = port
         #print(self.iperf)
-        
+        self.iperfver = iperfver
         #Tx: 5201
-        self.TxIperf = iperf3(port=self.port)
+        self.TxIperf = Iperf(port=self.port , iperfver=self.iperfver)
         self.TxIperf.signal_debug.connect(self.log)
         self.TxIperf.signal_error.connect(self.log)
         self.TxIperf.signal_result.connect(self.result)
         self.TxIperf.signal_finished.connect(self.finished)
         #self.TxIperf.signal_scanning.connect(self.doScanning)
         #self.TxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.TxIperfTh = iperfThread()
+        self.TxIperfTh = IperfThread()
         self.TxIperf.moveToThread(self.TxIperfTh)
         self.TxIperfTh.started.connect(self.TxIperf.task)
         self.TxIperfTh.start()
         
         #Rx: 5202
-        self.RxIperf = iperf3(port=self.port+1)
+        self.RxIperf = Iperf(port=self.port+1, iperfver=self.iperfver)
         self.RxIperf.signal_debug.connect(self.log)
         self.RxIperf.signal_error.connect(self.log)
         self.RxIperf.signal_result.connect(self.result)
         self.RxIperf.signal_finished.connect(self.finished)
         #self.RxIperf.signal_scanning.connect(self.doScanning)
         #self.RxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.RxIperfTh = iperfThread()
+        self.RxIperfTh = IperfThread()
         self.RxIperf.moveToThread(self.RxIperfTh)
         self.RxIperfTh.started.connect(self.RxIperf.task)
         self.RxIperfTh.start()
@@ -494,7 +499,7 @@ class Server(iperf3):
 
     
         
-class Client(iperf3):
+class IperfClient(Iperf):
 
     signal_result = pyqtSignal(int, int, int, str)
     signal_finished = pyqtSignal(int, str)
@@ -502,8 +507,8 @@ class Client(iperf3):
     signal_debug = pyqtSignal(str, str)
 
     def __init__(self, host='127.0.0.1', port=5201,
-                 iRow=0, iCol=0, parent=None):
-        super(Client, self).__init__(parent)
+                 iRow=0, iCol=0, iperfver=3, parent=None):
+        super(IperfClient, self).__init__(parent)
         #index for report
         self.row = iRow
         self.col = iCol
@@ -512,15 +517,16 @@ class Client(iperf3):
         self.port = port
         self.isReverse = False
         #self.p = []
+        self.iperfver=iperfver
         
-        self.tIperf = iperf3(port=self.port, isServer=False)
+        self.tIperf = Iperf(port=self.port, isServer=False, iperfver=self.iperfver)
         self.tIperf.signal_debug.connect(self.debug)
         self.tIperf.signal_error.connect(self.error)
         self.tIperf.signal_result.connect(self.result)
         self.tIperf.signal_finished.connect(self.finished)
         #self.TxIperf.signal_scanning.connect(self.doScanning)
         #self.TxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.IperfTh = iperfThread()
+        self.IperfTh = IperfThread()
         self.tIperf.moveToThread(self.IperfTh)
         self.IperfTh.started.connect(self.tIperf.task)
         self.IperfTh.start()
@@ -608,15 +614,15 @@ class Client(iperf3):
         
 # main
 if __name__ == "__main__":
-    a = Server('127.0.0.1')
+    a = IperfServer('127.0.0.1')
     print("Tx port: %s" % a.getTxPort)
     print("Rx port: %s" % a.getRxPort)
     
     #
-    TxC = Client('127.0.0.1')
+    TxC = IperfClient('127.0.0.1')
     #TxC.start(10)
 
-    RxC = Client('127.0.0.1', port=5202)
+    RxC = IperfClient('127.0.0.1', port=5202)
     #RxC.start(10, True)
     
-    
+    #TODO: wait thread finish
