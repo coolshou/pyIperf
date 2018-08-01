@@ -31,7 +31,14 @@ iperf3_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
         $(LIBTOOLFLAGS) --mode=link $(CCLD) -all-static $(iperf3_CFLAGS) $(CFLAGS) \
         $(iperf3_LDFLAGS) $(LDFLAGS) -o $@
 
+
+#build win32 on x86_64
+
+#build win64 on x86_64
 =============================================================================
+
+
+
 iperf2
 #x64
 ./configure --build=x86_64-linux-gnu \
@@ -40,9 +47,13 @@ iperf2
 ./configure --build=i686-linux-gnu \
 	CFLAGS="-m32 -static" CXXFLAGS="-m32 -static"
 
-#build win32 on x86_64
-#build win64 on x86_64
+#build win32 on x86_64 (gcc-mingw-w64-i686)
+./configure --host=i686-w64-mingw32 \
+	CFLAGS="-static" CXXFLAGS="-static"
 
+#build win64 on x86_64 (gcc-mingw-w64-x86-64)
+./configure --host=x86_64-w64-mingw32 \
+	CFLAGS="-static" CXXFLAGS="-static"
 
 #arm
 /configure --without-openssl --host=arm-none-linux-gnueabi CC=arm-linux-gnueabi-gcc LD=arm-linux-gnueabi-ld CXX=arm-linux-gnueabi-g++ CFLAGS=-static CXXFLAGS=-static --enable-static --disable-shared --prefix=/home/doru/Desktop/iperf3/output

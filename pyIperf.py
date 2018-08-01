@@ -8,7 +8,7 @@ Created on Tue Jul 18 13:45:15 2017
 '''
     subprocrss base iperf3 python class
 '''
-__version__ = "20180727"
+__version__ = "20180731"
 
 import time
 import sys
@@ -24,22 +24,6 @@ import psutil
 import atexit
 if platform.system() == 'Linux':
     import pexpect
-#from asyncproc import Process
-
-#Queue
-#from threading  import Thread
-#try:
-#    from queue import Queue, Empty  # python 3.x
-#except ImportError:
-#    from Queue import Queue, Empty
-
-#ON_POSIX = 'posix' in sys.builtin_module_names
-
-#def enqueue_output(out, queue):
-#    for line in iter(out.readline, b''):
-#        queue.put(line)
-    #out.close()
-
   
 def kill(proc_pid):
     process = psutil.Process(proc_pid)
@@ -340,10 +324,10 @@ class Iperf(QObject):
                                 if line == 0:
                                     time.sleep(0.1)
                                 else:
-                                #for line in child: #time out problem
+                                    #for line in child: #time out problem
                                     rs = line.rstrip().decode("utf-8")
                                     if rs:
-                                        print("%s" % (rs))                            
+                                        print("%s" % (rs))
                                         self.signal_result.emit(self.iParallel, rs) #output result
                             except pexpect.TIMEOUT:
                                 pass            
