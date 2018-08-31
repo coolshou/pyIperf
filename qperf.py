@@ -25,7 +25,7 @@ import logging
 import serial
 import serial.tools.list_ports as list_ports
 
-from pyIperf import IperfServer, IperfClient, iperfResult
+from Iperf import IperfServer, IperfClient, iperfResult
 from dlgConfig import Ui_Dialog as dlgConfig
 
 
