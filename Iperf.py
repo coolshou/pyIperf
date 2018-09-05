@@ -329,6 +329,9 @@ class Iperf(QObject):
                                     if rs:
                                         print("%s" % (rs))
                                         self.signal_result.emit(self.iParallel, rs) #output result
+                                if self.stoped:
+                                    self.signal_finished.emit(1, "signal_finished!!")
+                                    break
                             except pexpect.TIMEOUT:
                                 pass            
                     elif platform.system() == 'Windows':
@@ -358,9 +361,20 @@ class Iperf(QObject):
                                 #print("iParallel: %s" % self.iParallel)
                                 self.signal_result.emit(self.iParallel, rs) #output result
                                 QApplication.processEvents() 
+                            if self.stoped:
+                                self.signal_finished.emit(1, "signal_finished!!")
+                                break
                     else:
+                        QApplication.processEvents() 
+                        if self.stoped:
+                            self.signal_finished.emit(1, "signal_finished!!")
+                            break
                         pass
                 else:
+                    QApplication.processEvents() 
+                    if self.stoped:
+                        self.signal_finished.emit(1, "signal_finished!!")
+                        break
                     self.log('0',"wait for command!!")
                     pass
             except:
@@ -454,6 +468,12 @@ class IperfServer(Iperf):
         #self.log(self.__class__.__name__, self.RxIperf.getPID())
         self.TxIperf.do_stop()
         self.RxIperf.do_stop()
+        if self.TxIperfTh.isRunning():
+            self.TxIperfTh.terminate()
+            self.TxIperfTh.wait()
+        if self.RxIperfTh.isRunning():
+            self.RxIperfTh.terminate()
+            self.RxIperfTh.wait()
         #self.RxIperfTh.exit(0)
 
     def getTxPort(self):

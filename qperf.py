@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
             # running in a bundle
             bundle_dir = sys._MEIPASS
         else:
-            bundle_dir =''
+            bundle_dir =os.path.dirname(os.path.realpath(__file__))
         
         self.logFilePath = os.path.join(bundle_dir, 'log')
         if not os.path.isdir(self.logFilePath):
