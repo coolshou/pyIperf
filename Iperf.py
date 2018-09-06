@@ -297,6 +297,7 @@ class Iperf(QObject):
         ''' stop the thread  '''
         locker.lock()
         self.stoped = True
+        self.child.terminate(force=True)
         self.sCmd.clear()
         locker.unlock()
 
@@ -310,17 +311,18 @@ class Iperf(QObject):
         self.stoped = False        
         self.exiting = False
         self.log('0',"start task")      
-        child = None
+        self.child = None
         while not self.exiting:
             try:
                 if len(self.sCmd)>0:
                     if platform.system() == 'Linux':
                         print("sCmd: %s" % (" ".join(self.sCmd)))
-                        child = pexpect.spawn(" ".join(self.sCmd))
-                        atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
-                        while child.isalive():
+                        self.child = pexpect.spawn(" ".join(self.sCmd))
+                        atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
+                        while self.child.isalive():
+                            QApplication.processEvents() 
                             try:
-                                line = child.readline() #non-blocking readline
+                                line = self.child.readline() #non-blocking readline
                                 if line == 0:
                                     time.sleep(0.1)
                                 else:
@@ -341,20 +343,21 @@ class Iperf(QObject):
                         #following will have extra shell to launch app
                         #self.proc = subprocess.Popen(' '.join(self.sCmd), shell=True,
                         #
-                        child = subprocess.Popen(self.sCmd, shell=False,
+                        self.child = subprocess.Popen(self.sCmd, shell=False,
                                                      bufsize=1, 
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT)
-                        atexit.register(self.kill_proc, child) #need this to kill iperf3 procress
+                        atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
                         
-                        if child is None:
+                        if self.child is None:
                             #self.signal_debug.emit(self.__class__.__name__, "command error")
                             self.signal_finished.emit(-1, "command error") 
                             return -1
 
                         #following will block
                         #do task, wait procress finish
-                        for line in iter(child.stdout.readline, b''):
+                        for line in iter(self.child.stdout.readline, b''):
+                            QApplication.processEvents() 
                             rs = line.rstrip().decode("utf-8")
                             if rs:
                                 #print("%s rs: %s" % (datetime.datetime.now(), len(rs)))
@@ -379,7 +382,7 @@ class Iperf(QObject):
                     pass
             except:
                 self.traceback()
-                raise
+                #raise
             finally:
                 #self.signal_finished.emit(-1, "proc end!!") 
                 #if child:
@@ -402,7 +405,11 @@ class Iperf(QObject):
 
     def kill_proc(self, proc):
         try:
-            proc.terminate()
+            print("kill_proc:%s" % proc)
+            #if not proc.terminate(force=True):
+            #    print("%s not killed" % proc)
+            subprocess.call(['sudo', 'kill', str(proc.pid)])
+            
         except Exception:
             self.traceback();
             pass
@@ -446,10 +453,15 @@ class IperfServer(Iperf):
         self.TxIperf.signal_finished.connect(self.finished)
         #self.TxIperf.signal_scanning.connect(self.doScanning)
         #self.TxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.TxIperfTh = IperfThread()
+        #self.TxIperfTh = IperfThread()
+        print("create TxIperfTh")
+        self.TxIperfTh = QThread()
         self.TxIperf.moveToThread(self.TxIperfTh)
         self.TxIperfTh.started.connect(self.TxIperf.task)
         self.TxIperfTh.start()
+        
+        #self.RxIperf=None
+        #self.RxIperfTh=None
         
         #Rx: 5202
         self.RxIperf = Iperf(port=self.port+1, iperfver=self.iperfver)
@@ -459,28 +471,44 @@ class IperfServer(Iperf):
         self.RxIperf.signal_finished.connect(self.finished)
         #self.RxIperf.signal_scanning.connect(self.doScanning)
         #self.RxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.RxIperfTh = IperfThread()
+        #self.RxIperfTh = IperfThread()
+        print("create RxIperfTh")
+        self.RxIperfTh = QThread()
         self.RxIperf.moveToThread(self.RxIperfTh)
         self.RxIperfTh.started.connect(self.RxIperf.task)
         self.RxIperfTh.start()
         
     def stop(self):
         #self.log(self.__class__.__name__, self.RxIperf.getPID())
-        self.TxIperf.do_stop()
-        self.RxIperf.do_stop()
-        if self.TxIperfTh.isRunning():
-            self.TxIperfTh.terminate()
-            self.TxIperfTh.wait()
-        if self.RxIperfTh.isRunning():
-            self.RxIperfTh.terminate()
-            self.RxIperfTh.wait()
+        print("iperfserver stop")
+        if self.TxIperf:
+            self.TxIperf.do_stop()
+        if self.RxIperf:
+            self.RxIperf.do_stop()
+        #following will cause app hang!!
+        #if self.TxIperfTh.isRunning():
+        #    print("TxIperfTh.terminate")
+        #    self.TxIperfTh.stop()
+        #    self.TxIperfTh.terminate()
+        #    self.TxIperfTh.wait()
+        #if self.RxIperfTh.isRunning():
+        #    print("RxIperfTh.terminate")
+        #    self.RxIperfTh.stop()
+        #    self.RxIperfTh.terminate()
+        #    self.RxIperfTh.wait()
         #self.RxIperfTh.exit(0)
 
     def getTxPort(self):
-        return self.TxIperf.port
+        if self.TxIperf:
+            return self.TxIperf.port
+        else:
+            return -1
     
     def getRxPort(self):
-        return self.RxIperf.port    
+        if self.RxIperf:
+            return self.RxIperf.port    
+        else:
+            return -1
         
     @pyqtSlot(int,str)
     def result(self, iType, msg):
@@ -493,13 +521,24 @@ class IperfServer(Iperf):
     @pyqtSlot(int, str)
     def finished(self, iCode, msg):
         #self.log('0', "finished: %s - %s" % (iCode, msg))
+        if not self.TxIperfTh is None:
+            self.TxIperfTh.quit()
         if not self.RxIperfTh is None:
             self.RxIperfTh.quit()
         self.signal_finished.emit(iCode, msg) 
         
+    def isTxRunning(self):
+        if self.TxIperfTh:
+            return self.TxIperfTh.isRunning()
+        else:
+            return False
+    def isRxRunning(self):
+        if self.RxIperfTh:
+            return self.RxIperfTh.isRunning()
+        else:
+            return False
     def isRunning(self):
-        #TODO: Tx!!Rx!!
-        return self.RxIperfTh.isRunning()
+        return self.isTxRunning() or self.isRxRunning()
 
     
         
@@ -599,7 +638,6 @@ class IperfClient(Iperf):
 
         #print(self.sCmd)
         self.tIperf.sCmd = self.sCmd
-        #print("tIperf.sCmd: %s " % self.tIperf.sCmd)
         
     def startTest(self):
         #self.setClientCmd()
