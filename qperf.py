@@ -17,13 +17,15 @@ from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
                           QMutex, Qt, QFileInfo)
 from PyQt5.QtWidgets import (QApplication, QMainWindow,  QSystemTrayIcon,
                              QErrorMessage, QMessageBox, QAbstractItemView,
-                             QTableWidgetItem, QFileDialog, QDialog)
+                             QTableWidgetItem, QFileDialog, QDialog, 
+                             QRadioButton)
 from PyQt5.QtGui import (QIcon, QStandardItemModel )
 from PyQt5.uic import loadUi
 
 import logging
 import serial
 import serial.tools.list_ports as list_ports
+import re
 
 from Iperf import IperfServer, IperfClient, iperfResult
 from dlgConfig import Ui_Dialog as dlgConfig
@@ -79,7 +81,8 @@ class columnResult(Enum):
     colRx=colTx+1
     
 class MainWindow(QMainWindow):
-    __VERSION__ = "20170816"
+    __VERSION__ = "20180907"
+    signal_debug = pyqtSignal(str, str)
     
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -116,12 +119,8 @@ class MainWindow(QMainWindow):
         #setting
         self.loadSetting()
         
-        
-        #TODO: detect current running iperf3.exe and delete it
-        #init server
-        self.s = IperfServer()
-        self.s.signal_result.connect(self.parserServerReult)
-        self.s.signal_debug.connect(self.log)
+        self.rbIperf2.toggled.connect(lambda:self.setIperfVersion(self.rbIperf2))
+        self.rbIperf3.toggled.connect(lambda:self.setIperfVersion(self.rbIperf3))
         
         self.pbStart.clicked.connect(self.startClient)
         self.pbStop.clicked.connect(self.stopClient)
@@ -147,6 +146,17 @@ class MainWindow(QMainWindow):
             self.s.stop()
         pass
 
+    @pyqtSlot(QRadioButton)    
+    def setIperfVersion(self, b):
+        if b.text() == "iperf 2":
+            port=5001
+        elif b.text() == "iperf 3":
+            port=5201
+            
+        self.sbPort.setValue(port)
+        #self.gbAPConsole.setEnabled(bStat)
+        #self.gbAPTelnet.setEnabled(not bStat)
+        
     @pyqtSlot()
     def showConfig(self):
         #show config
@@ -203,6 +213,12 @@ class MainWindow(QMainWindow):
         return lst
 
     def loadSetting(self):
+        ver= self.settings.value('IperfVersion', 3, type=int)
+        if ver == 2:
+            self.rbIperf2.setChecked(True)
+        if ver == 3:
+            self.rbIperf3.setChecked(True)
+            
         self.leHost.setText(self.settings.value('Host', "127.0.0.1"))
         self.sbPort.setValue(int(self.settings.value('Port', 5201)))
         idx = self.comboBoxFormat.findText(self.settings.value('Format', 'M') , Qt.MatchFixedString)
@@ -245,6 +261,13 @@ class MainWindow(QMainWindow):
         self.cbTxRx.setCheckState(int(self.settings.value('TxRx', 0)))
 
     def saveSetting(self):
+
+        if self.rbIperf2.isChecked():
+            ver = 2
+        elif self.rbIperf3.isChecked():
+            ver = 3
+        self.settings.setValue('IperfVersion', ver)
+            
         self.settings.setValue('Host', self.leHost.text())
         self.settings.setValue('Port', self.sbPort.text())
         self.settings.setValue('Format', self.comboBoxFormat.currentText())
@@ -304,18 +327,34 @@ class MainWindow(QMainWindow):
            
     @pyqtSlot(int, int, int, str)
     def parserReult(self, iRow, iCol, iType, msg):
-        if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or  
-            (('receiver' in msg) and (iCol == columnResult.colRx.value))):
-            #self.log(str(iType), "parserReult: (%s,%s) %s = %s" % (iRow, iCol, iType, msg))
-            print("parserReult iType: %s" % iType)
-            rs = iperfResult(iType, msg)
-            self.logToFile("%s %s" %(rs.throughput , rs.throughputUnit))
-            if iType>1 and rs.idx == 'SUM':
-                self.updateData( iRow, iCol, "%s (%s)" % (rs.throughput , rs.throughputUnit))
-            else:
-                self.updateData( iRow, iCol, "%s (%s)" % (rs.throughput , rs.throughputUnit))
-            
-        #self.log(str(iType), "parserReult: (%s,%s) %s = %s" % (iRow, iCol, iType, msg))
+        print("parserReult: %s, %s, %s, %s" %(iRow, iCol, iType, msg))
+        if self.rbIperf3.isChecked():
+            #iperf v3 format
+            if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or  
+                (('receiver' in msg) and (iCol == columnResult.colRx.value))):
+                #self.log(str(iType), "parserReult: (%s,%s) %s = %s" % (iRow, iCol, iType, msg))
+                print("parserReult iType: %s" % iType)
+                rs = iperfResult(iType, msg)
+                self.logToFile("%s %s" %(rs.throughput , rs.throughputUnit))
+                if iType>1 and rs.idx == 'SUM':
+                    self.updateData( iRow, iCol, "%s (%s)" % (rs.throughput , rs.throughputUnit))
+                else:
+                    self.updateData( iRow, iCol, "%s (%s)" % (rs.throughput , rs.throughputUnit))
+        elif self.rbIperf2.isChecked():
+            #iperf v2 format
+            #[  3]  0.0-10.0 sec  1126 MBytes   945 Mbits/sec
+            duration = self.sbDuration.value()
+            r = msg.split(" ")
+            r = list(filter(None, r)) # fastest
+            if len(r)==8:
+                f = r[2].split("-")
+                #print("%s %s" %(f[0],f[1]))
+                if float(f[0])==0.0 and float(f[1])>=float(duration):
+                    #print("%s %s" % (r[6], r[7]))
+                    self.updateData( iRow, iCol, "%s (%s)" % (r[6], r[7]))
+        else:
+            print("#TODO: unknown iperf version!!")
+            pass
 
     @pyqtSlot(int, str)
     def finish(self, iCode, msg):
@@ -379,6 +418,10 @@ class MainWindow(QMainWindow):
     def startClient(self, isCheck):
         self.setRunning(True)
         #print("TODO: startClient")
+        if self.rbIperf3.isChecked():
+            ver = 3
+        elif self.rbIperf2.isChecked():
+            ver = 2
         host = self.leHost.text()
         #print("leHost: %s" % host)
         port = self.sbPort.value()
@@ -392,9 +435,9 @@ class MainWindow(QMainWindow):
         bReverse = self.cbReverse.isChecked()
         #print("cbReverse: %s" % bReverse)
         if self.rbTCP.isChecked():
-            isUDP = False
+            isTCP = True
         else:
-            isUDP = True
+            isTCP = False
         #
         #print("TODO: sbWindowSize: %s" % self.sbWindowSize.value())
         iWindowSize = self.sbWindowSize.value()
@@ -411,24 +454,30 @@ class MainWindow(QMainWindow):
         self.logFileName = os.path.join(self.logFilePath, "%s.log" % self.getCurrentTime())
         self.logToFile("datetime, place, degree, Tx, Rx, TxRx\n")
         
+        #TODO: iperf server? or other place
+        self.s = IperfServer(host='127.0.0.1', port=port, iperfver=ver, bTcp=isTCP)
+        self.s.signal_result.connect(self.parserServerReult)
+        self.s.signal_debug.connect(self.log)
+
         #twResult  alweady have data, append new data.
         iRow= self.tableResult.rowCount()
         #test Tx
         #self.txC = Client(host, port, iRow, columnResult.colTx.value)
         if not self.txC:
-            self.txC = IperfClient(host, port)
+            print("txC: %s" % ver)
+            self.txC = IperfClient(host, port, iperfver=ver, bTcp=isTCP)
             self.txC.signal_result.connect(self.parserReult)
             self.txC.signal_finished.connect(self.finish)
             self.txC.signal_error.connect(self.error)
             self.txC.signal_debug.connect(self.debug)
-
         if not self.txC.isRunning():
             print("tx : %s" % self.txC.isRunning())
             self.txC.startTest()
             print("check tx : %s" % self.txC.isRunning())
             
         if not self.rxC:
-            self.rxC = IperfClient(host, port)
+            print("rxC: %s" % ver)
+            self.rxC = IperfClient(host, port, iperfver=ver, bTcp=isTCP)
             self.rxC.signal_result.connect(self.parserReult)
             self.rxC.signal_finished.connect(self.finish)
             self.rxC.signal_error.connect(self.error)
@@ -456,7 +505,7 @@ class MainWindow(QMainWindow):
                 try:
                     self.txC.setRowCol(iRow, columnResult.colTx.value)
                     self.txC.setTartgetHost(host, port)
-                    self.txC.setClientCmd(sFormat, isUDP, duration, parallel, 
+                    self.txC.setClientCmd(sFormat, isTCP, duration, parallel, 
                                           bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)
@@ -479,7 +528,7 @@ class MainWindow(QMainWindow):
                 try:
                     self.rxC.setRowCol(iRow, columnResult.colRx.value)
                     self.rxC.setTartgetHost(host, port)
-                    self.rxC.setClientCmd(sFormat, isUDP, duration, parallel,
+                    self.rxC.setClientCmd(sFormat, isTCP, duration, parallel,
                                           not bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)

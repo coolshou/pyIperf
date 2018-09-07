@@ -203,6 +203,7 @@ class Iperf(QObject):
         else:
             arch=platform.machine()
 
+        print("iperf: %s" % iperfver)
         if iperfver==3:
             iperfname="iperf3"
         else:
@@ -303,9 +304,11 @@ class Iperf(QObject):
         locker.lock()
         self.stoped = True
         if platform.system() == 'Linux':
-            self.child.terminate(force=True)
+            if self.child:
+                self.child.terminate(force=True)
         elif platform.system() == 'Windows':
-            self.child.terminate()
+            if self.child:
+                self.child.terminate()
         self.sCmd.clear()
         locker.unlock()
 
@@ -337,7 +340,7 @@ class Iperf(QObject):
                                     #for line in child: #time out problem
                                     rs = line.rstrip().decode("utf-8")
                                     if rs:
-                                        print("%s" % (rs))
+                                        #print("signal_result: %s" % (rs))
                                         self.signal_result.emit(self.iParallel, rs) #output result
                                 if self.stoped:
                                     self.signal_finished.emit(1, "signal_finished!!")
@@ -447,11 +450,11 @@ class IperfServer(Iperf):
     signal_finished = pyqtSignal(int, str)
     
     def __init__(self, host='127.0.0.1', port=5201, iperfver=3, bTcp=True, parent=None):
-        super(IperfServer, self).__init__(parent)
+        super(IperfServer, self).__init__(host, port, isServer=True, iperfver=iperfver, bTcp=bTcp, parent=parent)
         
         self.host = host
         self.port = port
-        #print(self.iperf)
+        print("IperfServer ver: %s"%iperfver)
         self.iperfver = iperfver
         #Tx: 5201
         self.TxIperf = Iperf(port=self.port , iperfver=self.iperfver, bTcp=bTcp)
@@ -467,9 +470,6 @@ class IperfServer(Iperf):
         self.TxIperf.moveToThread(self.TxIperfTh)
         self.TxIperfTh.started.connect(self.TxIperf.task)
         self.TxIperfTh.start()
-        
-        #self.RxIperf=None
-        #self.RxIperfTh=None
         
         #Rx: 5202
         self.RxIperf = Iperf(port=self.port+1, iperfver=self.iperfver, bTcp=bTcp)
@@ -545,7 +545,7 @@ class IperfClient(Iperf):
 
     def __init__(self, host='127.0.0.1', port=5201,
                  iRow=0, iCol=0, iperfver=3, bTcp=True, parent=None):
-        super(IperfClient, self).__init__(parent)
+        super(IperfClient, self).__init__( host, port, isServer=False, iperfver=iperfver, bTcp=bTcp, parent=parent)
         #index for report
         self.row = iRow
         self.col = iCol
@@ -554,6 +554,7 @@ class IperfClient(Iperf):
         self.port = port
         self.isReverse = False
         #self.p = []
+        print("IperfClient ver:%s" % iperfver)
         self.iperfver=iperfver
         
         self.tIperf = Iperf(port=self.port, isServer=False, iperfver=self.iperfver, bTcp=bTcp)
@@ -589,7 +590,7 @@ class IperfClient(Iperf):
     def finished(self, iCode, msg):
         self.signal_finished.emit(iCode, msg)
         
-    def setClientCmd(self, sFromat='M', isUDP=False, duration=10, parallel=1, 
+    def setClientCmd(self, sFromat='M', isTCP=True, duration=10, parallel=1, 
                      isReverse=False, iBitrate=0, sBitrateUnit='K',
                      iWindowSize=65535, sWindowSizeUnit='K', iMTU=40):
         '''iperf client command'''
@@ -598,7 +599,7 @@ class IperfClient(Iperf):
         if sFromat:
             self.sCmd.append('-f')
             self.sCmd.append(sFromat)
-        if isUDP:
+        if not isTCP:
             self.sCmd.append('-u')
             
         if duration:
