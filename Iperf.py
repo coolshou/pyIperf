@@ -21,7 +21,7 @@ from PyQt5.QtCore import (QThread, pyqtSlot, pyqtSignal, QObject, QMutex)
 from PyQt5.QtWidgets import (QApplication)
 import logging
 import psutil
-import atexit
+#import atexit
 if platform.system() == 'Linux':
     import pexpect
   
@@ -177,11 +177,11 @@ class iperfResult():
             size = '%.2f byte' % bytes
         return size.split(" ")
 
-
+'''
 class IperfThread(QThread):
     def run(self):
         self.exec_()
-
+'''
 locker = QMutex()
 
 class Iperf(QObject):
@@ -195,7 +195,7 @@ class Iperf(QObject):
       
     default_port = 5201
     
-    def __init__(self, host='', port=5201, isServer=True, iperfver=3,  parent=None):
+    def __init__(self, host='', port=5201, isServer=True, iperfver=3, bTcp=True, parent=None):
         super(Iperf, self).__init__(parent)
         #iperf binary
         if platform.machine() in ['i386','i486','i586', 'i686']:
@@ -221,6 +221,11 @@ class Iperf(QObject):
         if host:
             self.host = host
         self.port = port
+        if bTcp:
+            self.protocal=""
+        else:
+            self.protocal="-u"
+            
         self.stoped = False #user stop
         
         self.sCmd= []
@@ -249,7 +254,7 @@ class Iperf(QObject):
     def setServerCmd(self):
         '''iperf server command'''
         #self.sCmd = [self.iperf, '-s', '-D', 
-        self.sCmd = [self.iperf, '-s', '-p', str(self.port)]
+        self.sCmd = [self.iperf, '-s', '-p', str(self.port), self.protocal]
        
     def execCmd(self, sCmd):
         '''exec sCmd and return subprocess.Popen'''
@@ -297,7 +302,10 @@ class Iperf(QObject):
         ''' stop the thread  '''
         locker.lock()
         self.stoped = True
-        self.child.terminate(force=True)
+        if platform.system() == 'Linux':
+            self.child.terminate(force=True)
+        elif platform.system() == 'Windows':
+            self.child.terminate()
         self.sCmd.clear()
         locker.unlock()
 
@@ -318,7 +326,7 @@ class Iperf(QObject):
                     if platform.system() == 'Linux':
                         print("sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = pexpect.spawn(" ".join(self.sCmd))
-                        atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
+                        #atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
                         while self.child.isalive():
                             QApplication.processEvents() 
                             try:
@@ -347,7 +355,7 @@ class Iperf(QObject):
                                                      bufsize=1, 
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT)
-                        atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
+                        #atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
                         
                         if self.child is None:
                             #self.signal_debug.emit(self.__class__.__name__, "command error")
@@ -438,7 +446,7 @@ class IperfServer(Iperf):
     signal_result = pyqtSignal(int, str)
     signal_finished = pyqtSignal(int, str)
     
-    def __init__(self, host='127.0.0.1', port=5201, iperfver=3, parent=None):
+    def __init__(self, host='127.0.0.1', port=5201, iperfver=3, bTcp=True, parent=None):
         super(IperfServer, self).__init__(parent)
         
         self.host = host
@@ -446,7 +454,7 @@ class IperfServer(Iperf):
         #print(self.iperf)
         self.iperfver = iperfver
         #Tx: 5201
-        self.TxIperf = Iperf(port=self.port , iperfver=self.iperfver)
+        self.TxIperf = Iperf(port=self.port , iperfver=self.iperfver, bTcp=bTcp)
         self.TxIperf.signal_debug.connect(self.log)
         self.TxIperf.signal_error.connect(self.log)
         self.TxIperf.signal_result.connect(self.result)
@@ -464,7 +472,7 @@ class IperfServer(Iperf):
         #self.RxIperfTh=None
         
         #Rx: 5202
-        self.RxIperf = Iperf(port=self.port+1, iperfver=self.iperfver)
+        self.RxIperf = Iperf(port=self.port+1, iperfver=self.iperfver, bTcp=bTcp)
         self.RxIperf.signal_debug.connect(self.log)
         self.RxIperf.signal_error.connect(self.log)
         self.RxIperf.signal_result.connect(self.result)
@@ -479,24 +487,10 @@ class IperfServer(Iperf):
         self.RxIperfTh.start()
         
     def stop(self):
-        #self.log(self.__class__.__name__, self.RxIperf.getPID())
-        print("iperfserver stop")
         if self.TxIperf:
             self.TxIperf.do_stop()
         if self.RxIperf:
             self.RxIperf.do_stop()
-        #following will cause app hang!!
-        #if self.TxIperfTh.isRunning():
-        #    print("TxIperfTh.terminate")
-        #    self.TxIperfTh.stop()
-        #    self.TxIperfTh.terminate()
-        #    self.TxIperfTh.wait()
-        #if self.RxIperfTh.isRunning():
-        #    print("RxIperfTh.terminate")
-        #    self.RxIperfTh.stop()
-        #    self.RxIperfTh.terminate()
-        #    self.RxIperfTh.wait()
-        #self.RxIperfTh.exit(0)
 
     def getTxPort(self):
         if self.TxIperf:
@@ -550,7 +544,7 @@ class IperfClient(Iperf):
     signal_debug = pyqtSignal(str, str)
 
     def __init__(self, host='127.0.0.1', port=5201,
-                 iRow=0, iCol=0, iperfver=3, parent=None):
+                 iRow=0, iCol=0, iperfver=3, bTcp=True, parent=None):
         super(IperfClient, self).__init__(parent)
         #index for report
         self.row = iRow
@@ -562,14 +556,15 @@ class IperfClient(Iperf):
         #self.p = []
         self.iperfver=iperfver
         
-        self.tIperf = Iperf(port=self.port, isServer=False, iperfver=self.iperfver)
+        self.tIperf = Iperf(port=self.port, isServer=False, iperfver=self.iperfver, bTcp=bTcp)
         self.tIperf.signal_debug.connect(self.debug)
         self.tIperf.signal_error.connect(self.error)
         self.tIperf.signal_result.connect(self.result)
         self.tIperf.signal_finished.connect(self.finished)
         #self.TxIperf.signal_scanning.connect(self.doScanning)
         #self.TxIperf.signal_scanResult.connect(self.updateScanResult)
-        self.IperfTh = IperfThread()
+        #self.IperfTh = IperfThread()
+        self.IperfTh = QThread()
         self.tIperf.moveToThread(self.IperfTh)
         self.IperfTh.started.connect(self.tIperf.task)
         self.IperfTh.start()
