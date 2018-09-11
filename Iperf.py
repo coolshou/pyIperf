@@ -21,7 +21,8 @@ from PyQt5.QtCore import (QThread, pyqtSlot, pyqtSignal, QObject, QMutex)
 from PyQt5.QtWidgets import (QApplication)
 import logging
 import psutil
-#import atexit
+if platform.system() == 'Windows':
+    import atexit
 if platform.system() == 'Linux':
     import pexpect
   
@@ -358,7 +359,7 @@ class Iperf(QObject):
                                                      bufsize=1, 
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT)
-                        #atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
+                        atexit.register(self.kill_proc, self.child) #need this to kill iperf3 procress
                         
                         if self.child is None:
                             #self.signal_debug.emit(self.__class__.__name__, "command error")
