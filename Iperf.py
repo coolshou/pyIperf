@@ -25,7 +25,7 @@ if platform.system() == 'Windows':
     import atexit
 if platform.system() == 'Linux':
     import pexpect
-  
+
 def kill(proc_pid):
     process = psutil.Process(proc_pid)
     for proc in process.children(recursive=True):
@@ -418,10 +418,14 @@ class Iperf(QObject):
     def kill_proc(self, proc):
         try:
             print("kill_proc:%s" % proc)
-            #if not proc.terminate(force=True):
-            #    print("%s not killed" % proc)
-            subprocess.call(['sudo', 'kill', str(proc.pid)])
-            
+            if platform.system() == 'Linux':
+                #if not proc.terminate(force=True):
+                #    print("%s not killed" % proc)
+                subprocess.call(['sudo', 'kill', str(proc.pid)])
+            else:
+            #if platform.system() == 'Windows':
+                proc.terminate()
+
         except Exception:
             self.traceback();
             pass
