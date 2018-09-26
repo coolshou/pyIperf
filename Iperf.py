@@ -216,7 +216,7 @@ class Iperf(QObject):
             self.iperf = os.path.join(self.iperf, arch, '%s' % iperfname)
             
         if platform.system() == 'Windows':
-            self.iperf = os.path.join(self.iperf, '%s.exe' % iperfname)
+            self.iperf = os.path.join(self.iperf, arch, '%s.exe' % iperfname)
             #self.iperf = self.iperf + '.exe'
         
         #print("use iperf: %s" % self.iperf)
