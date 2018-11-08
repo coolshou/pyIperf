@@ -204,7 +204,7 @@ class Iperf(QObject):
         else:
             arch=platform.machine()
 
-        print("iperf: %s" % iperfver)
+        #print("iperf: %s" % iperfver)
         if iperfver==3:
             iperfname="iperf3"
         else:
