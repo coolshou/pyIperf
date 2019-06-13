@@ -86,26 +86,26 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super(MainWindow, self).__init__()
+        if getattr(sys, 'frozen', False):
+            # we are running in a |PyInstaller| bundle
+            basedir = sys._MEIPASS
+        else:
+            # we are running in a normal Python environment
+            basedir = os.path.dirname(__file__)
+            
         self.settings = QSettings('qperf.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
         
         self.preventSystemShutdown = False; #when result is not saved!!
         self.stoped = False
-        
-        if getattr( sys, 'frozen', False ) :
-            # running in a bundle
-            bundle_dir = sys._MEIPASS
-        else:
-            bundle_dir =os.path.dirname(os.path.realpath(__file__))
-        
-        self.logFilePath = os.path.join(bundle_dir, 'log')
+               
+        self.logFilePath = os.path.join(basedir, 'log')
         if not os.path.isdir(self.logFilePath):
             os.mkdir(self.logFilePath)
             
-        ui_main = os.path.join(bundle_dir, 'qperf.ui') #load UI
-        self.ui_config = os.path.join(bundle_dir, 'dlgConfig.ui') #load UI
-        icon_main = os.path.join(bundle_dir, 'images', 'qperf.png')
-        loadUi(ui_main,self)
+        icon_main = os.path.join(basedir, 'images', 'qperf.png')
+        #load UI
+        loadUi(os.path.join(basedir, 'qperf.ui'),self)
         self.setWindowTitle("%s(%s) - %s" % ("qperf", "pyIperf", self.__VERSION__))        
         self.setWindowIcon(QIcon(icon_main))
         #TODO: tabChart (current hide)
@@ -161,7 +161,6 @@ class MainWindow(QMainWindow):
     def showConfig(self):
         #show config
         dialog = QDialog()
-        #dialog.loadUi(self.ui_config)
         dialog.ui = dlgConfig()
         dialog.ui.setupUi(dialog)
         dialog.exec_()
