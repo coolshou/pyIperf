@@ -18,6 +18,7 @@ import os
 import platform
 import logging
 import psutil
+import ast
 
 try:
     from PyQt5.QtCore import (QCoreApplication, QThread,
@@ -506,7 +507,7 @@ class IperfServer(Iperf):
         # self._o["Iperf"].signal_scanning.connect(self.doScanning)
         # self._o["Iperf"].signal_scanResult.connect(self.updateScanResult)
         # self._o["iThread"] = IperfThread()
-        print("create Iperf server")
+        self.log("0", "create Iperf server")
         self._o["iThread"] = QThread()
         self._o["Iperf"].moveToThread(self._o["iThread"])
         self._o["iThread"].started.connect(self._o["Iperf"].task)
@@ -546,9 +547,9 @@ class IperfServer(Iperf):
     def _on_result(self, tid, iType, msg):
         self.signal_result.emit(tid, iType, msg)  # output result
 
-    @pyqtSlot(str, str)
-    def log(self, mType, msg):
-        print("[%s]%s: %s" % (self.__class__.__name__, mType, msg))
+    # @pyqtSlot(str, str)
+    # def log(self, mType, msg):
+    #     print("[%s]%s: %s" % (self.__class__.__name__, mType, msg))
 
     @pyqtSlot(int, str)
     def _on_finished(self, iCode, msg):
@@ -574,7 +575,7 @@ class IperfClient(Iperf):
     signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
 
-    def __init__(self, host='127.0.0.1', port=5201,
+    def __init__(self, host='127.0.0.1', port=5201, args=None,
                  iRow=0, iCol=0, iperfver=3, bTcp=True, parent=None):
         super(IperfClient, self).__init__(host, port, isServer=False,
                                           iperfver=iperfver,
@@ -583,11 +584,12 @@ class IperfClient(Iperf):
         self.row = iRow
         self.col = iCol
 
+        self._parser_args(args)
         # self.host = host
         # self.port = port
         self.isReverse = False
         # self.p = []
-        print("IperfClient ver:%s" % iperfver)
+        self.log("0", "IperfClient ver:%s" % iperfver, 2)
         # self.iperfver = iperfver
         self._o = {}  # store obj
         self._o["iperf"] = Iperf(host, port=self.port,
@@ -627,47 +629,68 @@ class IperfClient(Iperf):
             self._o["iThread"].quit()
         self.signal_finished.emit(iCode, msg)
 
-    def setClientCmd(self, sFromat='M', isTCP=True, duration=10, parallel=1,
-                     isReverse=False, iBitrate=0, sBitrateUnit='K',
-                     iWindowSize=65535, sWindowSizeUnit=''):
+    def _parser_args(self, args):
         '''after setting client cmd, the iperf will start running'''
         '''iperf client command'''
-        self.sCmd = [self.iperf, '-c', self.host,
-                     '-p', str(self.port), '-i', '1']
-        if sFromat:
-            self.sCmd.append('-f')
-            self.sCmd.append(sFromat)
-        if not isTCP:
+        # sFromat='M', isTCP=True, duration=10, parallel=1,
+        # isReverse=False, iBitrate=0, sBitrateUnit='K',
+        # iWindowSize=65535, sWindowSizeUnit=''
+
+        ds = ast.literal_eval(args)
+
+        target_ip = ds.get("server")
+        protocal = ds.get("protocal")
+        duration = ds.get("duration")
+        parallel = ds.get("parallel")
+        reverse = ds.get("reverse")
+        bitrate = ds.get("bitrate")
+        windowsize = ds.get("windowsize")
+        omit = ds.get("omit")
+
+        self.sCmd = [self.iperf, '-c', target_ip,
+                     '-p', "%s" % (self.port), '-i', '1']
+        if protocal == 0:
+            pass
+        else:
             self.sCmd.append('-u')
 
-        if duration:
+        if duration > 0:
             self.sCmd.append('-t')
-            self.sCmd.append(str(duration))
-        # TODO:  -l, --len #[KMG]
-        # length of buffer to read or write (default 128 KB for TCP, 8 KB for UDP)
-        if parallel:
+            self.sCmd.append("%s" % duration)
+
+        if parallel > 1:
             self.sCmd.append('-P')
-            self.sCmd.append(str(parallel))
+            self.sCmd.append("%s" % parallel)
             self._o["iperf"].iParallel = parallel
 
-        if isReverse:
-            # run in reverse mode (server sends, client receives)
+        # run in reverse mode (server sends, client receives)
+        if reverse:
             self.sCmd.append('-R')
 
-        self.sCmd.append('-b')
-        if int(iBitrate) <= 0:
-            self.sCmd.append(str(iBitrate))
-        else:
-            self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
+        if bitrate > 0:
+            self.sCmd.append('-b')
+            self.sCmd.append("%s" % bitrate)
+        #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
-        if iWindowSize:
+        if windowsize > 0:
             # Linux Max = 425984
-            if iWindowSize > 425984:
+            if windowsize > 425984:
                 self.log("0", "Max window size is %s" % 425984)
-                iWindowSize = 425984
+                windowsize = 425984
             self.sCmd.append('-w')
-            # self.sCmd.append("%s%s" % (str(iWindowSize), sWindowSizeUnit))
-            self.sCmd.append("%s" % iWindowSize)
+            self.sCmd.append("%s" % windowsize)
+
+        if omit > 0:
+            self.sCmd.append('-O')
+            self.sCmd.append("%s" % omit)
+
+        # if sFromat:
+        #     self.sCmd.append('-f')
+        #     self.sCmd.append(sFromat)
+
+        # TODO:  -l, --len #[KMG]
+        # length of buffer to read or write
+        # (default 128 KB for TCP, 8 KB for UDP)
 
         # TODO: -M, --set-mss
         # # set TCP/SCTP maximum segment size (MTU - 40 bytes)
@@ -678,7 +701,12 @@ class IperfClient(Iperf):
         # TODO: -4, --version4            only use IPv4
         # TODO: -6, --version6            only use IPv6
 
-        # print(self.sCmd)
+        self.log("0", self.sCmd)
+
+    def start(self):
+        if len(self.sCmd) <= 0:
+            self.error("-1", "Not iperf cmd")
+
         self._o["iperf"].sCmd = self.sCmd
 
     def startTest(self):
