@@ -42,6 +42,8 @@ def kill(proc_pid):
 
 
 class iperfResult():
+    '''class to handle iperf throughput output line'''
+    # TODO:
     iKb = 1024
     iMb = iKb * 1024
     iGb = iMb * 1024
@@ -199,19 +201,22 @@ class IperfThread(QThread):
 '''
 locker = QMutex()
 
+DEFAULT_IPERF3_PORT = 5201
+DEFAULT_IPERF2_PORT = 5001
+
 
 class Iperf(QObject):
     '''python of iperf2/iperf3 class'''
     __VERSION__ = '20180726'
 
-    signal_result = pyqtSignal(int, str)
+    signal_result = pyqtSignal(int, int, str)  # thread id, iParallel, data
     signal_finished = pyqtSignal(int, str)
     signal_error = pyqtSignal(str, str)
     signal_debug = pyqtSignal(str, str)  # class, msg
 
-    default_port = 5201
+    default_port = DEFAULT_IPERF3_PORT
 
-    def __init__(self, host='', port=5201, isServer=True,
+    def __init__(self, host='', port=5201,
                  iperfver=3, bTcp=True, parent=None):
         super(Iperf, self).__init__(parent)
         self._DEBUG = 30
@@ -254,26 +259,13 @@ class Iperf(QObject):
         self.stoped = False  # user stop
 
         self.sCmd = []
-        if isServer:
-            self.setServerCmd()
 
         self.iParallel = 0  # for report result use
-        # self.q = Queue()
-
-    # def setTartgetHost(self, host, port):
-    #     self.host = host
-    #     self.port = port
 
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
         self.log("0", "enqueue_output: %s" % line)
-        # out.close()
-
-    def setServerCmd(self):
-        '''iperf server command'''
-        # self.sCmd = [self.iperf, '-s', '-D',
-        self.sCmd = [self.iperf, '-s', '-p', str(self.port), self.protocal]
 
     def execCmd(self, sCmd):
         '''exec sCmd and return subprocess.Popen'''
@@ -339,6 +331,7 @@ class Iperf(QObject):
         # Note: This is never called directly. It is called by Qt once the
         # thread environment has been set up.
         # exec by QThread.start()
+        tID = QThread.currentThread()
 
         self.stoped = False
         self.exiting = False
@@ -346,6 +339,10 @@ class Iperf(QObject):
         self.child = None
         while not self.exiting:
             try:
+                while len(self.sCmd) <= 0:
+                    QCoreApplication.processEvents()
+                    self.log("0", "wait sCmd", 3)
+                    time.sleep(0.5)
                 if len(self.sCmd) > 0:
                     if platform.system() == 'Linux':
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
@@ -367,7 +364,8 @@ class Iperf(QObject):
                                     if rs:
                                         # print("signal_result: %s" % (rs))
                                         # output result
-                                        self.signal_result.emit(self.iParallel,
+                                        self.signal_result.emit(tID,
+                                                                self.iParallel,
                                                                 rs)
                                 if self.stoped:
                                     self.signal_finished.emit(1,
@@ -402,7 +400,8 @@ class Iperf(QObject):
                                 # print("%s rs: %s" % (datetime.datetime.now(), len(rs)))
                                 # print("iParallel: %s" % self.iParallel)
                                 #output result
-                                self.signal_result.emit(self.iParallel, rs)
+                                self.signal_result.emit(tID,
+                                                        self.iParallel, rs)
                                 QCoreApplication.processEvents()
                             if self.stoped:
                                 self.signal_finished.emit(1, "set stop!!")
@@ -419,6 +418,7 @@ class Iperf(QObject):
                         self.signal_finished.emit(1, "set stop!!")
                         break
                     self.log('0', "wait for command!!")
+                    continue
             except:
                 self.traceback()
                 # raise
@@ -429,7 +429,8 @@ class Iperf(QObject):
                         line = self.child.readline()
                         line = line.rstrip()
                         if len(line) > 0:
-                            self.signal_result.emit(self.iParallel, line)
+                            self.signal_result.emit(tID,
+                                                    self.iParallel, line)
                         QCoreApplication.processEvents()
                 self.log('0', "proc end!!")
                 # atexit.unregister(self.kill_proc)
@@ -486,12 +487,12 @@ class Iperf(QObject):
 class IperfServer(Iperf):
     """ A network testing server that will start an iperf3 in QThread
     server on any given port."""
-    # int: type, str: message
-    signal_result = pyqtSignal(int, str)
+    # thread, int: type, str: message
+    signal_result = pyqtSignal(int, int, str)
     signal_finished = pyqtSignal(int, str)
 
     def __init__(self, host='', port=5201, iperfver=3, bTcp=True, parent=None):
-        super(IperfServer, self).__init__(host, port, isServer=True,
+        super(IperfServer, self).__init__(host, port,
                                           iperfver=iperfver,
                                           bTcp=bTcp, parent=parent)
 
@@ -500,7 +501,7 @@ class IperfServer(Iperf):
         self._o["Iperf"] = Iperf(port=port, iperfver=iperfver, bTcp=bTcp)
         self._o["Iperf"].signal_debug.connect(self.log)
         self._o["Iperf"].signal_error.connect(self.log)
-        self._o["Iperf"].signal_result.connect(self.result)
+        self._o["Iperf"].signal_result.connect(self._on_result)
         self._o["Iperf"].signal_finished.connect(self._on_finished)
         # self._o["Iperf"].signal_scanning.connect(self.doScanning)
         # self._o["Iperf"].signal_scanResult.connect(self.updateScanResult)
@@ -510,6 +511,9 @@ class IperfServer(Iperf):
         self._o["Iperf"].moveToThread(self._o["iThread"])
         self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].start()
+
+        # if isServer:
+        self.setServerCmd()
 
         # # Rx: 5202
         # self.RxIperf = Iperf(port=self.port+1, iperfver=iperfver, bTcp=bTcp)
@@ -526,21 +530,21 @@ class IperfServer(Iperf):
         # self.RxIperfTh.started.connect(self.RxIperf.task)
         # self.RxIperfTh.start()
 
+    def setServerCmd(self):
+        '''iperf server command'''
+        self.log("0", "setServerCmd")
+        sCmd = [self.iperf, '-s', '-p', str(self.port)]
+        self._o["Iperf"].sCmd = sCmd
+
     def stop(self):
         if self._o["Iperf"]:
             self._o["Iperf"].do_stop()
         # if self.RxIperf:
         #     self.RxIperf.do_stop()
 
-    # def get_port(self):
-    #     if self._o["Iperf"]:
-    #         return self._o["Iperf"].port
-    #     else:
-    #         return -1
-
-    @pyqtSlot(int, str)
-    def result(self, iType, msg):
-        self.signal_result.emit(iType, msg)  # output result
+    @pyqtSlot(int, int, str)
+    def _on_result(self, tid, iType, msg):
+        self.signal_result.emit(tid, iType, msg)  # output result
 
     @pyqtSlot(str, str)
     def log(self, mType, msg):
@@ -564,8 +568,8 @@ class IperfServer(Iperf):
 
 
 class IperfClient(Iperf):
-
-    signal_result = pyqtSignal(int, int, int, str)
+    # row, col, thread, iParallel, data
+    signal_result = pyqtSignal(int, int, int, int, str)
     signal_finished = pyqtSignal(int, str)
     signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
@@ -578,7 +582,7 @@ class IperfClient(Iperf):
         # index for report
         self.row = iRow
         self.col = iCol
-        #
+
         # self.host = host
         # self.port = port
         self.isReverse = False
@@ -586,11 +590,11 @@ class IperfClient(Iperf):
         print("IperfClient ver:%s" % iperfver)
         # self.iperfver = iperfver
         self._o = {}  # store obj
-        self._o["iperf"] = Iperf(host, port=self.port, isServer=False,
+        self._o["iperf"] = Iperf(host, port=self.port,
                                  iperfver=iperfver, bTcp=bTcp)
         self._o["iperf"].signal_debug.connect(self._on_debug)
         self._o["iperf"].signal_error.connect(self.error)
-        self._o["iperf"].signal_result.connect(self.result)
+        self._o["iperf"].signal_result.connect(self._on_result)
         self._o["iperf"].signal_finished.connect(self._on_finished)
         # self._o["Iperf"].signal_scanning.connect(self.doScanning)
         # self._o["Iperf"].signal_scanResult.connect(self.updateScanResult)
@@ -614,8 +618,8 @@ class IperfClient(Iperf):
                                sMsg))
 
     @pyqtSlot(int, str)
-    def result(self, iType, msg):
-        self.signal_result.emit(self.row, self.col, iType, msg)  # output result
+    def _on_result(self, tid, iType, msg):
+        self.signal_result.emit(self.row, self.col, tid, iType, msg)
 
     @pyqtSlot(int, str)
     def _on_finished(self, iCode, msg):
@@ -625,7 +629,7 @@ class IperfClient(Iperf):
 
     def setClientCmd(self, sFromat='M', isTCP=True, duration=10, parallel=1,
                      isReverse=False, iBitrate=0, sBitrateUnit='K',
-                     iWindowSize=65535, sWindowSizeUnit='', iMTU=40):
+                     iWindowSize=65535, sWindowSizeUnit=''):
         '''after setting client cmd, the iperf will start running'''
         '''iperf client command'''
         self.sCmd = [self.iperf, '-c', self.host,

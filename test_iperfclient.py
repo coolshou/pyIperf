@@ -44,12 +44,11 @@ def on_debug(tpy, msg):
 
 def check_quit():
     if ipc:
-        print("check_quit")
+        # print("check_quit")
         if ipc.isRunning():
-            # if ipc2:
-            #     if ipc2.isRunning():
-            #         return 0
-            # print("ipc still running")
+            return 0
+    if ipc2:
+        if ipc2.isRunning():
             return 0
     print("quit")
     # TODO: can not actually quit!! why?
@@ -66,21 +65,27 @@ if __name__ == '__main__':
     # code here
     ipc = IperfClient()
     port = ipc.get_port()
+    print("ipc: %s" % port)
     ipc.signal_result.connect(on_result)
     ipc.signal_debug.connect(on_debug)
     ipc.signal_finished.connect(check_quit)
+    # time.sleep(1)
 
-    # ipc2 = IperfClient(port=port+1)
-    # port = ipc.get_port()
-    # ipc2.signal_result.connect(on_result)
-    # ipc2.signal_debug.connect(on_debug)
+    ipc2 = IperfClient(port=port+1)
+    port = ipc2.get_port()
+    print("ipc2: %s" % port)
+    ipc2.signal_result.connect(on_result)
+    ipc2.signal_debug.connect(on_debug)
+    ipc2.signal_finished.connect(check_quit)
+
     # time.sleep(1)
 
     ipc.setClientCmd()  # Tx
-    # ipc2.setClientCmd(isReverse=True)  # Rx
+    ipc2.setClientCmd(isReverse=True)  # Rx
+
     # while ipc.isRunning() and ipc2.isRunning():
-    while ipc.isRunning():
-        print(".")
+    while ipc.isRunning() or ipc2.isRunning():
+        # print(".")
         QCoreApplication.processEvents()
         time.sleep(0.5)
         check_quit()
