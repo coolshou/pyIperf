@@ -359,11 +359,8 @@ class Iperf(QObject):
                                 if len(line) == 0:
                                     time.sleep(0.1)
                                 else:
-                                    # for line in child: #time out problem
-                                    # rs = line.rstrip().decode("utf-8")
                                     rs = line.rstrip()
                                     if rs:
-                                        # print("signal_result: %s" % (rs))
                                         # output result
                                         self.signal_result.emit(tID,
                                                                 self.iParallel,
@@ -605,7 +602,7 @@ class IperfClient(Iperf):
         self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
                                sMsg))
 
-    @pyqtSlot(int, str)
+    @pyqtSlot(int, int, str)
     def _on_result(self, tid, iType, msg):
         self.signal_result.emit(self.row, self.col, tid, iType, msg)
 
