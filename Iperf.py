@@ -570,7 +570,7 @@ class IperfClient(Iperf):
         # self.port = port
         self.isReverse = False
         # self.p = []
-        self.log("0", "IperfClient ver:%s" % iperfver, 2)
+        self.log("0", "IperfClient ver:%s" % iperfver, 0)
         # self.iperfver = iperfver
 
         self._o["iperf"] = Iperf(host, port,
