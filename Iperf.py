@@ -619,7 +619,8 @@ class IperfClient(Iperf):
         # sFromat='M', isTCP=True, duration=10, parallel=1,
         # isReverse=False, iBitrate=0, sBitrateUnit='K',
         # iWindowSize=65535, sWindowSizeUnit=''
-
+        if args is None:
+            self.log("0", "No iperf client options")
         ds = ast.literal_eval(args)
 
         target_ip = ds.get("server")
