@@ -16,9 +16,10 @@ import datetime
 import subprocess
 import os
 import platform
-import logging
+#import logging
 import psutil
 import ast
+import zlib
 
 try:
     from PyQt5.QtCore import (QCoreApplication, QThread,
@@ -620,7 +621,9 @@ class IperfClient(Iperf):
         # iWindowSize=65535, sWindowSizeUnit=''
         if args is None:
             self.log("0", "No iperf client options")
-        ds = ast.literal_eval(args)
+
+        uncmpstr = zlib.decompress(args)
+        ds = ast.literal_eval(uncmpstr)
 
         target_ip = ds.get("server")
         protocal = ds.get("protocal")
