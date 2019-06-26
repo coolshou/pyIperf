@@ -513,23 +513,7 @@ class IperfServer(Iperf):
         self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].start()
 
-        # if isServer:
         self.setServerCmd()
-
-        # # Rx: 5202
-        # self.RxIperf = Iperf(port=self.port+1, iperfver=iperfver, bTcp=bTcp)
-        # self.RxIperf.signal_debug.connect(self.log)
-        # self.RxIperf.signal_error.connect(self.log)
-        # self.RxIperf.signal_result.connect(self.result)
-        # self.RxIperf.signal_finished.connect(self._on_finished)
-        # # self.RxIperf.signal_scanning.connect(self.doScanning)
-        # # self.RxIperf.signal_scanResult.connect(self.updateScanResult)
-        # # self.RxIperfTh = IperfThread()
-        # print("create RxIperfTh")
-        # self.RxIperfTh = QThread()
-        # self.RxIperf.moveToThread(self.RxIperfTh)
-        # self.RxIperfTh.started.connect(self.RxIperf.task)
-        # self.RxIperfTh.start()
 
     def setServerCmd(self):
         '''iperf server command'''
@@ -577,7 +561,7 @@ class IperfClient(Iperf):
 
     def __init__(self, host='127.0.0.1', port=5201, args=None,
                  iRow=0, iCol=0, iperfver=3, bTcp=True, parent=None):
-        super(IperfClient, self).__init__(host, port, isServer=False,
+        super(IperfClient, self).__init__(host, port,
                                           iperfver=iperfver,
                                           bTcp=bTcp, parent=parent)
         # index for report
