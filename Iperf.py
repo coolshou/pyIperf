@@ -567,16 +567,16 @@ class IperfClient(Iperf):
         # index for report
         self.row = iRow
         self.col = iCol
+        self._o = {}  # store obj
 
-        self._parser_args(args)
         # self.host = host
         # self.port = port
         self.isReverse = False
         # self.p = []
         self.log("0", "IperfClient ver:%s" % iperfver, 2)
         # self.iperfver = iperfver
-        self._o = {}  # store obj
-        self._o["iperf"] = Iperf(host, port=self.port,
+
+        self._o["iperf"] = Iperf(host, port,
                                  iperfver=iperfver, bTcp=bTcp)
         self._o["iperf"].signal_debug.connect(self._on_debug)
         self._o["iperf"].signal_error.connect(self.error)
@@ -589,6 +589,8 @@ class IperfClient(Iperf):
         self._o["iperf"].moveToThread(self._o["iThread"])
         self._o["iThread"].started.connect(self._o["iperf"].task)
         self._o["iThread"].start()
+
+        self._parser_args(args)
 
     def setRowCol(self, Row, Col):
         self.row = Row
