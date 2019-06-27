@@ -68,7 +68,31 @@ class iperfResult():
         self.totalSendUnit = ""
         self.throughput = ""
         self.throughputUnit = ""
+        # TODO: send -> server
+# [  9]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   1.31 MBytes
+# [ 11]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   2.00 MBytes
+# [ 17]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   1.31 MBytes
+# [SUM]   9.00-10.00  sec  1.43 GBytes  12.3 Gbits/sec    0
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+# [ ID] Interval           Transfer     Bitrate         Retr
+# [  5]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
+# [  5]   0.00-10.00  sec  2.97 GBytes  2.55 Gbits/sec                  receiver
+# [  7]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
+# [  7]   0.00-10.00  sec  2.97 GBytes  2.55 Gbits/sec                  receiver
+# [  9]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
 
+        #  -R mode, have different output format
+# [  9]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
+# [ 11]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
+# [ 17]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
+# [SUM]   9.00-10.00  sec  1.51 GBytes  13.0 Gbits/sec
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+# [ ID] Interval           Transfer     Bitrate         Retr
+# [  5]   0.00-9.99   sec  2.87 GBytes  2.47 Gbits/sec    0             sender
+# [  5]   0.00-10.00  sec  2.87 GBytes  2.46 Gbits/sec                  receiver
+# [  7]   0.00-9.99   sec  2.87 GBytes  2.47 Gbits/sec    0             sender
+
+        #
         self.iParallel = iParallel
         try:
             if result is not None:
@@ -220,7 +244,7 @@ class Iperf(QObject):
 
     def __init__(self, port=DEFAULT_IPERF3_PORT, iperfver=3, parent=None):
         super(Iperf, self).__init__(parent)
-        self._DEBUG = 30
+        self._DEBUG = 3
         if getattr(sys, 'frozen', False):
             # we are running in a |PyInstaller| bundle
             self._basedir = sys._MEIPASS
@@ -336,17 +360,18 @@ class Iperf(QObject):
         # Note: This is never called directly. It is called by Qt once the
         # thread environment has been set up.
         # exec by QThread.start()
-        tID = QThread.currentThread()
+        # tID = QThread.currentThread()
+        tID = QThread.currentThreadId()
 
         self.stoped = False
         self.exiting = False
-        self.log('0', "start task")
+        self.log('0', "start task", 4)
         self.child = None
         while not self.exiting:
             try:
                 while len(self.sCmd) <= 0:
                     QCoreApplication.processEvents()
-                    self.log("0", "wait sCmd %s" % self.sCmd, 3)
+                    self.log("0", "wait sCmd", 4)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
                     if platform.system() == 'Linux':
@@ -366,7 +391,8 @@ class Iperf(QObject):
                                 else:
                                     rs = line.rstrip()
                                     if rs:
-                                        # print("%s : %s" % (self.iParallel, rs))
+                                        print("(%s)%s:%s" % (tID,
+                                              self.iParallel, rs))
                                         # output result
                                         self.signal_result.emit(tID,
                                                                 self.iParallel,
@@ -427,16 +453,7 @@ class Iperf(QObject):
                 self.traceback()
                 # raise
             finally:
-                # if self.child:
-                    # make sure all output had been read
-                    # while not self.child.eof():
-                    #     line = self.child.readline()
-                    #     line = line.rstrip()
-                    #     if len(line) > 0:
-                    #         self.signal_result.emit(tID,
-                    #                                 self.iParallel, line)
-                    #     QCoreApplication.processEvents()
-                self.log('0', "proc end!!")
+                self.log('0', "proc end!!", 4)
                 # atexit.unregister(self.kill_proc)
                 self.sCmd.clear()
                 self.exiting = True
@@ -446,9 +463,9 @@ class Iperf(QObject):
                 break
 
             QCoreApplication.processEvents()
-            time.sleep(2)
+            # time.sleep(2)
 
-        self.log(0, "task end!!")
+        self.log(0, "task end!!", 4)
         self.signal_finished.emit(1, "task end!!")
 
     def kill_proc(self, proc):
@@ -469,14 +486,9 @@ class Iperf(QObject):
     # def log(self, mType, msg, level=logging.INFO):
     def log(self, mType, msg, level=1):
         '''logging.INFO = 20'''
-        # show on stdout
         if self._DEBUG > level:
-            # if mType == '1':
-            # self.signal_error.emit(mType, msg)
-            # else:
+            # print("Iperf log: (%s) %s" % (mType, msg))
             self.signal_debug.emit(self.__class__.__name__, msg)
-            #    pass
-            # print(msg)
 
     def traceback(self, err=None):
         exc_type, exc_obj, tb = sys.exc_info()
@@ -564,6 +576,7 @@ class IperfServer(QObject):
         '''logging.INFO = 20'''
         # show on stdout
         if self._DEBUG > level:
+            # print("IperfServer log: (%s) %s" % (mType, msg))
             self.signal_debug.emit(self.__class__.__name__, msg)
 
 # class IperfClient(Iperf):
@@ -590,7 +603,7 @@ class IperfClient(QObject):
         self.sCmd = ""
 
         self.isReverse = False
-        self.log("0", "IperfClient ver:%s" % iperfver, 0)
+        self.log("0", "IperfClient ver:%s" % iperfver, 3)
 
         self._o["Iperf"] = Iperf(port, iperfver=iperfver)
         self._o["Iperf"].signal_debug.connect(self._on_debug)
@@ -618,11 +631,13 @@ class IperfClient(QObject):
 
     @pyqtSlot(str, str)
     def _on_debug(self, sType, sMsg):
+        print("IperfClient _on_debug (%s) %s" % (sType, sMsg))
         self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
                                sMsg))
 
     @pyqtSlot(int, int, str)
     def _on_result(self, tid, iType, msg):
+        print("IperfClient _on_result (%s)%s: %s" % (tid, iType, msg))
         self.signal_result.emit(self.row, self.col, tid, iType, msg)
 
     @pyqtSlot(int, str)
@@ -656,6 +671,7 @@ class IperfClient(QObject):
         reverse = ds.get("reverse")
         bitrate = ds.get("bitrate")
         windowsize = ds.get("windowsize")
+        fmtreport = ds.get("fmtreport")
         omit = ds.get("omit")
 
         self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
@@ -695,9 +711,11 @@ class IperfClient(QObject):
             self.sCmd.append('-O')
             self.sCmd.append("%s" % omit)
 
+        if fmtreport:
+            self.sCmd.append('-f')
+            self.sCmd.append(fmtreport)
+
         # if sFromat:
-        #     self.sCmd.append('-f')
-        #     self.sCmd.append(sFromat)
 
         # TODO:  -l, --len #[KMG]
         # length of buffer to read or write
@@ -712,7 +730,7 @@ class IperfClient(QObject):
         # TODO: -4, --version4            only use IPv4
         # TODO: -6, --version6            only use IPv6
 
-        self.log("0", "%s" % self.sCmd)
+        self.log("_parser_args", "%s" % " ".join(self.sCmd))
 
     def start(self):
         if len(self.sCmd) <= 0:
@@ -745,6 +763,7 @@ class IperfClient(QObject):
         '''logging.INFO = 20'''
         # show on stdout
         if self._DEBUG > level:
+            print("IperfClient log: (%s) %s" % (mType, msg))
             # if mType == '1':
             # self.signal_error.emit(mType, msg)
             # else:
