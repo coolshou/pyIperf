@@ -218,8 +218,7 @@ class Iperf(QObject):
 
     default_port = DEFAULT_IPERF3_PORT
 
-    def __init__(self, host='', port=5201,
-                 iperfver=3, bTcp=True, parent=None):
+    def __init__(self, port=DEFAULT_IPERF3_PORT, iperfver=3, parent=None):
         super(Iperf, self).__init__(parent)
         self._DEBUG = 30
         if getattr(sys, 'frozen', False):
@@ -250,13 +249,13 @@ class Iperf(QObject):
             # self.iperf = self.iperf + '.exe'
 
         # print("use iperf: %s" % self.iperf)
-        if host:
-            self.host = host
+        # if host:
+        #     self.host = host
         self.port = port
-        if bTcp:
-            self.protocal = ""
-        else:
-            self.protocal = "-u"
+        # if bTcp:
+        #     self.protocal = ""
+        # else:
+        #     self.protocal = "-u"
 
         self.stoped = False  # user stop
 
@@ -352,7 +351,8 @@ class Iperf(QObject):
                                                    encoding='utf-8')
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        while self.child.isalive():
+                        # while self.child.isalive():
+                        while not self.child.eof():
                             QCoreApplication.processEvents()
                             try:
                                 # non-blocking readline
@@ -362,6 +362,7 @@ class Iperf(QObject):
                                 else:
                                     rs = line.rstrip()
                                     if rs:
+                                        # print("%s : %s" % (self.iParallel, rs))
                                         # output result
                                         self.signal_result.emit(tID,
                                                                 self.iParallel,
@@ -422,15 +423,15 @@ class Iperf(QObject):
                 self.traceback()
                 # raise
             finally:
-                if self.child:
+                # if self.child:
                     # make sure all output had been read
-                    while not self.child.eof():
-                        line = self.child.readline()
-                        line = line.rstrip()
-                        if len(line) > 0:
-                            self.signal_result.emit(tID,
-                                                    self.iParallel, line)
-                        QCoreApplication.processEvents()
+                    # while not self.child.eof():
+                    #     line = self.child.readline()
+                    #     line = line.rstrip()
+                    #     if len(line) > 0:
+                    #         self.signal_result.emit(tID,
+                    #                                 self.iParallel, line)
+                    #     QCoreApplication.processEvents()
                 self.log('0', "proc end!!")
                 # atexit.unregister(self.kill_proc)
                 self.sCmd.clear()
@@ -483,21 +484,24 @@ class Iperf(QObject):
                                                        exc_obj, lineno))
 
 
-class IperfServer(Iperf):
+# class IperfServer(Iperf):
+class IperfServer(QObject):
     """ A network testing server that will start an iperf3 in QThread
     server on any given port."""
     # thread, int: type, str: message
     signal_result = pyqtSignal(int, int, str)
     signal_finished = pyqtSignal(int, str)
+    signal_debug = pyqtSignal(str, str)  # class, msg
 
-    def __init__(self, host='', port=5201, iperfver=3, bTcp=True, parent=None):
-        super(IperfServer, self).__init__(host, port,
-                                          iperfver=iperfver,
-                                          bTcp=bTcp, parent=parent)
-
+    def __init__(self, port=DEFAULT_IPERF3_PORT, iperfver=3, parent=None):
+        super(IperfServer, self).__init__(parent)
+        # super(IperfServer, self).__init__(port,
+        #                                   iperfver=iperfver,
+        #                                   parent=parent)
+        self._DEBUG = 3
         # Tx: 5201
         self._o = {}  # store obj
-        self._o["Iperf"] = Iperf(port=port, iperfver=iperfver, bTcp=bTcp)
+        self._o["Iperf"] = Iperf(port=port, iperfver=iperfver)
         self._o["Iperf"].signal_debug.connect(self.log)
         self._o["Iperf"].signal_error.connect(self.log)
         self._o["Iperf"].signal_result.connect(self._on_result)
@@ -516,7 +520,7 @@ class IperfServer(Iperf):
     def setServerCmd(self):
         '''iperf server command'''
         self.log("0", "setServerCmd")
-        sCmd = [self.iperf, '-s', '-p', str(self.port)]
+        sCmd = [self._o["Iperf"].iperf, '-s', '-p', str(self._o["Iperf"].port)]
         self._o["Iperf"].sCmd = sCmd
 
     def stop(self):
@@ -543,29 +547,46 @@ class IperfServer(Iperf):
         #     self.RxIperfTh.quit()
         self.signal_finished.emit(iCode, msg)
 
+    def get_port(self):
+        return self._o["Iperf"].get_port()
+
     def isRunning(self):
         if self._o["iThread"]:
             return self._o["iThread"].isRunning()
         else:
             return False
 
+    def log(self, mType, msg, level=1):
+        '''logging.INFO = 20'''
+        # show on stdout
+        if self._DEBUG > level:
+            # if mType == '1':
+            # self.signal_error.emit(mType, msg)
+            # else:
+            self.signal_debug.emit(self.__class__.__name__, msg)
 
-class IperfClient(Iperf):
+# class IperfClient(Iperf):
+class IperfClient(QObject):
     # row, col, thread, iParallel, data
     signal_result = pyqtSignal(int, int, int, int, str)
     signal_finished = pyqtSignal(int, str)
     signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
 
-    def __init__(self, host='127.0.0.1', port=5201, args=None,
-                 iRow=0, iCol=0, iperfver=3, bTcp=True, parent=None):
-        super(IperfClient, self).__init__(host, port,
-                                          iperfver=iperfver,
-                                          bTcp=bTcp, parent=parent)
+    def __init__(self, port=5201, args=None,
+                 iRow=0, iCol=0, iperfver=3, parent=None):
+        super(IperfClient, self).__init__(parent)
+        self._DEBUG = 2
+        # super(IperfClient, self).__init__(port,
+        #                                   iperfver=iperfver,
+        #                                   parent=parent)
         # index for report
         self.row = iRow
         self.col = iCol
         self._o = {}  # store obj
+        #self.host = ""
+        self.port = port
+
 
         # self.host = host
         # self.port = port
@@ -574,21 +595,22 @@ class IperfClient(Iperf):
         self.log("0", "IperfClient ver:%s" % iperfver, 0)
         # self.iperfver = iperfver
 
-        self._o["iperf"] = Iperf(host, port,
-                                 iperfver=iperfver, bTcp=bTcp)
-        self._o["iperf"].signal_debug.connect(self._on_debug)
-        self._o["iperf"].signal_error.connect(self.error)
-        self._o["iperf"].signal_result.connect(self._on_result)
-        self._o["iperf"].signal_finished.connect(self._on_finished)
+        self._o["Iperf"] = Iperf(port, iperfver=iperfver)
+        self._o["Iperf"].signal_debug.connect(self._on_debug)
+        self._o["Iperf"].signal_error.connect(self.error)
+        self._o["Iperf"].signal_result.connect(self._on_result)
+        self._o["Iperf"].signal_finished.connect(self._on_finished)
+
+        self._parser_args(args)
         # self._o["Iperf"].signal_scanning.connect(self.doScanning)
         # self._o["Iperf"].signal_scanResult.connect(self.updateScanResult)
         # self._o["iThread"] = IperfThread()
         self._o["iThread"] = QThread()
-        self._o["iperf"].moveToThread(self._o["iThread"])
-        self._o["iThread"].started.connect(self._o["iperf"].task)
+        self._o["Iperf"].moveToThread(self._o["iThread"])
+        self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].start()
 
-        self._parser_args(args)
+
 
     def setRowCol(self, Row, Col):
         self.row = Row
@@ -621,9 +643,14 @@ class IperfClient(Iperf):
         # iWindowSize=65535, sWindowSizeUnit=''
         if args is None:
             self.log("0", "No iperf client options")
+            return
 
-        uncmpstr = zlib.decompress(args)
-        ds = ast.literal_eval(uncmpstr)
+        # uncmpstr = zlib.decompress(args)
+        # ds = ast.literal_eval(uncmpstr)
+        if type(args) == str:
+            ds = ast.literal_eval(args)
+        else:
+            self.log("-1", "unknown type of iperf args %s" % args)
 
         target_ip = ds.get("server")
         protocal = ds.get("protocal")
@@ -634,7 +661,7 @@ class IperfClient(Iperf):
         windowsize = ds.get("windowsize")
         omit = ds.get("omit")
 
-        self.sCmd = [self.iperf, '-c', target_ip,
+        self.sCmd = [self._o["Iperf"].iperf, '-c', target_ip,
                      '-p', "%s" % (self.port), '-i', '1']
         if protocal == 0:
             pass
@@ -648,7 +675,7 @@ class IperfClient(Iperf):
         if parallel > 1:
             self.sCmd.append('-P')
             self.sCmd.append("%s" % parallel)
-            self._o["iperf"].iParallel = parallel
+            # self._o["iperf"].iParallel = parallel
 
         # run in reverse mode (server sends, client receives)
         if reverse:
@@ -688,18 +715,21 @@ class IperfClient(Iperf):
         # TODO: -4, --version4            only use IPv4
         # TODO: -6, --version6            only use IPv6
 
-        self.log("0", self.sCmd)
+        self.log("0", "%s" % self.sCmd)
 
     def start(self):
         if len(self.sCmd) <= 0:
             self.error("-1", "Not iperf cmd")
 
-        self._o["iperf"].sCmd = self.sCmd
+        self._o["Iperf"].sCmd = self.sCmd
 
     def startTest(self):
         # self.setClientCmd()
-        self._o["iperf"].stoped = False
+        self._o["Iperf"].stoped = False
         self._o["iThread"].start()
+
+    def get_port(self):
+        return self._o["Iperf"].get_port()
 
     def isRunning(self):
         # st = self._o["iperf"].isRunning() and self._o["iThread"].isRunning()
@@ -708,4 +738,13 @@ class IperfClient(Iperf):
 
     def stop(self):
         # self.log(self.__class__.__name__, self.RxIperf.getPID())
-        self._o["iperf"].do_stop()
+        self._o["Iperf"].do_stop()
+
+    def log(self, mType, msg, level=1):
+        '''logging.INFO = 20'''
+        # show on stdout
+        if self._DEBUG > level:
+            # if mType == '1':
+            # self.signal_error.emit(mType, msg)
+            # else:
+            self.signal_debug.emit(self.__class__.__name__, msg)

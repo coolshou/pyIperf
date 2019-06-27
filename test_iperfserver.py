@@ -47,13 +47,13 @@ if __name__ == '__main__':
 
     ips = IperfServer()  # default port 5201 for iperf3
     port = ips.get_port()
-    ips2 = IperfServer(port=port+1, bTcp=False)
+    # ips2 = IperfServer(port=port+1, bTcp=False)
     # ips = IperfServer(port=60000)
     ips.signal_finished.connect(check_quit)
     if ips.isRunning():
         print("iperf runs on port %s" % ips.get_port())
-    if ips2.isRunning():
-        print("iperf runs on port %s" % ips2.get_port())
+    # if ips2.isRunning():
+    #     print("iperf runs on port %s" % ips2.get_port())
     # time.sleep(10)
     # ips.stop()
     sys.exit(APP.exec_())

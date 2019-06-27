@@ -34,8 +34,8 @@ def signal_handler(signal_, frame):
     sys.exit(0)
 
 
-def on_result(row, col, iType, msg):
-    print("on_result: %s,%s : (%s) %s" % (row, col, iType, msg))
+def on_result(row, col, tid, iType, msg):
+    print("on_result: %s,%s : (%s) %s => %s" % (row, col, tid, iType, msg))
 
 
 def on_debug(tpy, msg):
@@ -47,9 +47,9 @@ def check_quit():
         # print("check_quit")
         if ipc.isRunning():
             return 0
-    if ipc2:
-        if ipc2.isRunning():
-            return 0
+    # if ipc2:
+    #     if ipc2.isRunning():
+    #         return 0
     print("quit")
     # TODO: can not actually quit!! why?
     APP.quit()
@@ -62,8 +62,15 @@ if __name__ == '__main__':
     # And start a timer to call Application.event repeatedly.
     # You can change the timer parameter as you like.
     APP.startTimer(200)
+
     # code here
-    ipc = IperfClient()
+    ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+'parallel':5, 'reverse':0, 'bitrate':0, 'windowsize':-1, 'omit':2}"
+    port = 5201
+    #ip = '192.168.70.147'
+
+    ipc = IperfClient( port, ds)
     port = ipc.get_port()
     print("ipc: %s" % port)
     ipc.signal_result.connect(on_result)
@@ -71,20 +78,21 @@ if __name__ == '__main__':
     ipc.signal_finished.connect(check_quit)
     # time.sleep(1)
 
-    ipc2 = IperfClient(port=port+1)
-    port = ipc2.get_port()
-    print("ipc2: %s" % port)
-    ipc2.signal_result.connect(on_result)
-    ipc2.signal_debug.connect(on_debug)
-    ipc2.signal_finished.connect(check_quit)
+    # ipc2 = IperfClient(port=port+1)
+    # port = ipc2.get_port()
+    # print("ipc2: %s" % port)
+    # ipc2.signal_result.connect(on_result)
+    # ipc2.signal_debug.connect(on_debug)
+    # ipc2.signal_finished.connect(check_quit)
 
     # time.sleep(1)
 
-    ipc.setClientCmd()  # Tx
-    ipc2.setClientCmd(isReverse=True)  # Rx
+    #ipc.setClientCmd()  # Tx
+    ipc.start()
+    # ipc2.setClientCmd(isReverse=True)  # Rx
 
-    # while ipc.isRunning() and ipc2.isRunning():
-    while ipc.isRunning() or ipc2.isRunning():
+    while ipc.isRunning():
+    # while ipc.isRunning() or ipc2.isRunning():
         # print(".")
         QCoreApplication.processEvents()
         time.sleep(0.5)
