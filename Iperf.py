@@ -651,6 +651,7 @@ class IperfClient(QObject):
             ds = ast.literal_eval(args)
         else:
             self.log("-1", "unknown type of iperf args %s" % args)
+            return
 
         target_ip = ds.get("server")
         protocal = ds.get("protocal")
