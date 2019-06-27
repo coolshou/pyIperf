@@ -263,6 +263,7 @@ class Iperf(QObject):
 
         self.iParallel = 0  # for report result use
 
+
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
@@ -326,6 +327,9 @@ class Iperf(QObject):
     def get_port(self):
         return self.port
 
+    def set_cmd(self, cmd):
+        self.sCmd = cmd
+
     @pyqtSlot()
     def task(self):
         # pexpect way to run program, !!!!not work on windows!!!!
@@ -342,7 +346,7 @@ class Iperf(QObject):
             try:
                 while len(self.sCmd) <= 0:
                     QCoreApplication.processEvents()
-                    self.log("0", "wait sCmd", 3)
+                    self.log("0", "wait sCmd %s" % self.sCmd, 3)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
                     if platform.system() == 'Linux':
@@ -560,9 +564,6 @@ class IperfServer(QObject):
         '''logging.INFO = 20'''
         # show on stdout
         if self._DEBUG > level:
-            # if mType == '1':
-            # self.signal_error.emit(mType, msg)
-            # else:
             self.signal_debug.emit(self.__class__.__name__, msg)
 
 # class IperfClient(Iperf):
@@ -584,16 +585,12 @@ class IperfClient(QObject):
         self.row = iRow
         self.col = iCol
         self._o = {}  # store obj
-        #self.host = ""
+        self.server = ""
         self.port = port
+        self.sCmd = ""
 
-
-        # self.host = host
-        # self.port = port
         self.isReverse = False
-        # self.p = []
         self.log("0", "IperfClient ver:%s" % iperfver, 0)
-        # self.iperfver = iperfver
 
         self._o["Iperf"] = Iperf(port, iperfver=iperfver)
         self._o["Iperf"].signal_debug.connect(self._on_debug)
@@ -610,14 +607,13 @@ class IperfClient(QObject):
         self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].start()
 
-
-
     def setRowCol(self, Row, Col):
         self.row = Row
         self.col = Col
 
     @pyqtSlot(str, str)
     def error(self, sType, sMsg):
+        print("No iperf command (%s) %s" % (sType, sMsg))
         self.signal_error.emit(self.row, self.col, sType, sMsg)
 
     @pyqtSlot(str, str)
@@ -653,7 +649,7 @@ class IperfClient(QObject):
             self.log("-1", "unknown type of iperf args %s" % args)
             return
 
-        target_ip = ds.get("server")
+        self.server = ds.get("server")
         protocal = ds.get("protocal")
         duration = ds.get("duration")
         parallel = ds.get("parallel")
@@ -662,7 +658,7 @@ class IperfClient(QObject):
         windowsize = ds.get("windowsize")
         omit = ds.get("omit")
 
-        self.sCmd = [self._o["Iperf"].iperf, '-c', target_ip,
+        self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
                      '-p', "%s" % (self.port), '-i', '1']
         if protocal == 0:
             pass
@@ -722,12 +718,16 @@ class IperfClient(QObject):
         if len(self.sCmd) <= 0:
             self.error("-1", "Not iperf cmd")
 
-        self._o["Iperf"].sCmd = self.sCmd
+        self._o["Iperf"].set_cmd(self.sCmd)
+        # self._o["Iperf"].sCmd = self.sCmd
 
     def startTest(self):
         # self.setClientCmd()
         self._o["Iperf"].stoped = False
         self._o["iThread"].start()
+
+    def get_server_ip(self):
+        return self.server
 
     def get_port(self):
         return self._o["Iperf"].get_port()

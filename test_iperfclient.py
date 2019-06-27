@@ -68,32 +68,42 @@ if __name__ == '__main__':
 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
 'parallel':5, 'reverse':0, 'bitrate':0, 'windowsize':-1, 'omit':2}"
     port = 5201
-    #ip = '192.168.70.147'
-
-    ipc = IperfClient( port, ds)
+    # ip = '192.168.70.147'
+    ipcs = {}
+    ipc = IperfClient(port, ds)
     port = ipc.get_port()
     print("ipc: %s" % port)
     ipc.signal_result.connect(on_result)
     ipc.signal_debug.connect(on_debug)
     ipc.signal_finished.connect(check_quit)
     # time.sleep(1)
+    # ipcs[port] = ipc
 
-    # ipc2 = IperfClient(port=port+1)
-    # port = ipc2.get_port()
-    # print("ipc2: %s" % port)
-    # ipc2.signal_result.connect(on_result)
-    # ipc2.signal_debug.connect(on_debug)
-    # ipc2.signal_finished.connect(check_quit)
+    ipc2 = IperfClient(port+1, ds)
+    port = ipc2.get_port()
+    print("ipc2: %s" % port)
+    ipc2.signal_result.connect(on_result)
+    ipc2.signal_debug.connect(on_debug)
+    ipc2.signal_finished.connect(check_quit)
+    ipcs[port] = ipc2
 
-    # time.sleep(1)
+    for key in ipcs:
+        ipc = ipcs[key]
+        ipc.start()
+        QCoreApplication.processEvents()
 
-    #ipc.setClientCmd()  # Tx
-    ipc.start()
-    # ipc2.setClientCmd(isReverse=True)  # Rx
+    wait = True
+    while wait:
+        for key in ipcs:
+            ipc = ipcs[key]
+            if ipc.isRunning():
+                ip = ipc.get_server_ip()
+                print("iperf running: %s: %s" % (ip, key))
+                continue
+            time.sleep(0.5)
+            QCoreApplication.processEvents()
+            wait = False
 
-    while ipc.isRunning():
-    # while ipc.isRunning() or ipc2.isRunning():
-        # print(".")
         QCoreApplication.processEvents()
         time.sleep(0.5)
         check_quit()
