@@ -675,7 +675,7 @@ class IperfClient(QObject):
             # self._o["iperf"].iParallel = parallel
 
         # run in reverse mode (server sends, client receives)
-        if reverse:
+        if reverse == 1:
             self.sCmd.append('-R')
 
         if bitrate > 0:
