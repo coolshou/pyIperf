@@ -360,7 +360,7 @@ class Iperf(QObject):
 
     def get_resultdetail(self):
         '''get store iperf all result'''
-        print("get_resiltdetail")
+        print("get_resultdetail")
         return self._detail
 
     def set_cmd(self, cmd):
@@ -473,9 +473,6 @@ class Iperf(QObject):
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
-        # print("# TODO parser result")
-        # self.signal_result.emit(tID, self.iParallel, line)
-        # print("%s- %s" % (tID, line))
         if ("[" in line) and ("]" in line):
             # this suould be data we care
             if "local" in line:
@@ -486,6 +483,7 @@ class Iperf(QObject):
                 pass
             else:
                 # real data need to parser
+                print("parser: %s" % (line))
                 self._detail.append(line)
         else:
             print("IGNORE: %s" % (line))
