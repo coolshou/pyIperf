@@ -488,13 +488,14 @@ class Iperf(QObject):
                 if "(omitted)" in line:
                     pass
                 elif "[SUM]" in line:
+                    print("parser: %s" % (line))
                     if "sender" in line:
                         pass
                     elif "receiver" in line:
                         # record
                         # print("parser: %s" % (line))
                         b =line.split()
-                        if len(b) == 8:
+                        if len(b) >= 6:
                             print("FOUND RESULT: %s" % b[5])
                             self._result = b[5]
                         else:
@@ -502,7 +503,8 @@ class Iperf(QObject):
 
 
         else:
-            print("IGNORE: %s" % (line))
+            # print("IGNORE: %s" % (line))
+            pass
 
     def kill_proc(self, proc):
         try:
