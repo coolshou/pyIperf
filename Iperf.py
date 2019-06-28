@@ -289,6 +289,7 @@ class Iperf(QObject):
 
         # store result
         self._result = ""  # store final sum
+        self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
 
     def enqueue_output(self, out, queue):
@@ -358,6 +359,11 @@ class Iperf(QObject):
         '''get store iperf average result'''
         print("get_result: %s" % self._result)
         return str(self._result)
+
+    def get_resultunit(self):
+        '''get store iperf average result'''
+        # print("get_resultunit: %s" % self._result)
+        return str(self._resultunit)
 
     def get_resultdetail(self):
         '''get store iperf all result'''
@@ -496,9 +502,10 @@ class Iperf(QObject):
                         # record
                         print("parser: %s" % (line))
                         b =line.split()
-                        if len(b) >= 6:
-                            print("FOUND RESULT: %s" % b[5])
+                        if len(b) >= 7:
+                            print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
                             self._result = b[5]
+                            self._resultunit = b[6]
                         else:
                             print("wrong format:%s" % b)
 
@@ -793,6 +800,10 @@ class IperfClient(QObject):
     def get_result(self):
         '''get store iperf average result'''
         return self._o["Iperf"].get_result()
+
+    def get_resultunit(self):
+        '''get store iperf average result unit'''
+        return self._o["Iperf"].get_resultunit()
 
     def get_resultdetail(self):
         '''get store iperf all result'''
