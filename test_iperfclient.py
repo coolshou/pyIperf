@@ -77,15 +77,15 @@ if __name__ == '__main__':
     ipc.signal_debug.connect(on_debug)
     ipc.signal_finished.connect(check_quit)
     # time.sleep(1)
-    # ipcs[port] = ipc
+    ipcs[port] = ipc
 
-    ipc2 = IperfClient(port+1, ds)
-    port = ipc2.get_port()
-    print("ipc2: %s" % port)
-    ipc2.signal_result.connect(on_result)
-    ipc2.signal_debug.connect(on_debug)
-    ipc2.signal_finished.connect(check_quit)
-    ipcs[port] = ipc2
+    # ipc2 = IperfClient(port+1, ds)
+    # port = ipc2.get_port()
+    # print("ipc2: %s" % port)
+    # ipc2.signal_result.connect(on_result)
+    # ipc2.signal_debug.connect(on_debug)
+    # ipc2.signal_finished.connect(check_quit)
+    # ipcs[port] = ipc2
 
     for key in ipcs:
         ipc = ipcs[key]
@@ -98,7 +98,7 @@ if __name__ == '__main__':
             ipc = ipcs[key]
             if ipc.isRunning():
                 ip = ipc.get_server_ip()
-                print("iperf running: %s: %s" % (ip, key))
+                # print("iperf running: %s: %s" % (ip, key))
                 continue
             time.sleep(0.5)
             QCoreApplication.processEvents()
@@ -106,6 +106,7 @@ if __name__ == '__main__':
 
         QCoreApplication.processEvents()
         time.sleep(0.5)
-        check_quit()
-
+        # check_quit()
+    rs = ipc.get_resultdetail()
+    print(rs)
     sys.exit(APP.exec_())

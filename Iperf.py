@@ -287,6 +287,9 @@ class Iperf(QObject):
 
         self.iParallel = 0  # for report result use
 
+        # store result
+        self._result = ""  # store final sum
+        self._detail = []  # store every line of data
 
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
@@ -351,6 +354,15 @@ class Iperf(QObject):
     def get_port(self):
         return self.port
 
+    def get_result(self):
+        '''get store iperf average result'''
+        print("get_result")
+
+    def get_resultdetail(self):
+        '''get store iperf all result'''
+        print("get_resiltdetail")
+        return self._detail
+
     def set_cmd(self, cmd):
         self.sCmd = cmd
 
@@ -391,12 +403,8 @@ class Iperf(QObject):
                                 else:
                                     rs = line.rstrip()
                                     if rs:
-                                        print("(%s)%s:%s" % (tID,
-                                              self.iParallel, rs))
                                         # output result
-                                        self.signal_result.emit(tID,
-                                                                self.iParallel,
-                                                                rs)
+                                        self._handel_dataline(tID, rs)
                                 if self.stoped:
                                     self.signal_finished.emit(1,
                                                               "signal_finished!!")
@@ -427,12 +435,8 @@ class Iperf(QObject):
                             QCoreApplication.processEvents()
                             rs = line.rstrip().decode("utf-8")
                             if rs:
-                                # print("%s rs: %s" % (datetime.datetime.now(), len(rs)))
-                                # print("iParallel: %s" % self.iParallel)
                                 #output result
-                                self.signal_result.emit(tID,
-                                                        self.iParallel, rs)
-                                QCoreApplication.processEvents()
+                                self._handel_dataline(tID, rs)
                             if self.stoped:
                                 self.signal_finished.emit(1, "set stop!!")
                                 break
@@ -467,6 +471,24 @@ class Iperf(QObject):
 
         self.log(0, "task end!!", 4)
         self.signal_finished.emit(1, "task end!!")
+
+    def _handel_dataline(self, tID, line):
+        # print("# TODO parser result")
+        # self.signal_result.emit(tID, self.iParallel, line)
+        # print("%s- %s" % (tID, line))
+        if ("[" in line) and ("]" in line):
+            # this suould be data we care
+            if "local" in line:
+                # record header data
+                print("HEADER: %s" % (line))
+            elif "Interval" in line:
+                # ignore header line
+                pass
+            else:
+                # real data need to parser
+                self._detail.append(line)
+        else:
+            print("IGNORE: %s" % (line))
 
     def kill_proc(self, proc):
         try:
@@ -514,7 +536,7 @@ class IperfServer(QObject):
         # super(IperfServer, self).__init__(port,
         #                                   iperfver=iperfver,
         #                                   parent=parent)
-        self._DEBUG = 3
+        self._DEBUG = 1
         # Tx: 5201
         self._o = {}  # store obj
         self._o["Iperf"] = Iperf(port=port, iperfver=iperfver)
@@ -749,6 +771,14 @@ class IperfClient(QObject):
 
     def get_port(self):
         return self._o["Iperf"].get_port()
+
+    def get_result(self):
+        '''get store iperf average result'''
+        return self._o["Iperf"].get_result()
+
+    def get_resultdetail(self):
+        '''get store iperf all result'''
+        return self._o["Iperf"].get_resultdetail()
 
     def isRunning(self):
         # st = self._o["iperf"].isRunning() and self._o["iThread"].isRunning()
