@@ -357,10 +357,10 @@ class Iperf(QObject):
     def get_result(self):
         '''get store iperf average result'''
         print("get_result")
+        return self._result
 
     def get_resultdetail(self):
         '''get store iperf all result'''
-        print("get_resultdetail")
         return self._detail
 
     def set_cmd(self, cmd):
@@ -484,7 +484,22 @@ class Iperf(QObject):
             else:
                 # real data need to parser
                 print("parser: %s" % (line))
-                self._detail.append(line)
+                self._detail.append(line)  # recore every line
+                # TODO: progress send line data
+                if "(omitted)" in line:
+                    pass
+                elif "[SUM]" in line:
+                    if "sender" in line:
+                        pass
+                    elif "receiver" in line:
+                        #record
+                        b =line.split()
+                        if len(b) == 8:
+                            self._result = b[5]
+                        else:
+                            print("wrong format:%s" % b)
+
+
         else:
             print("IGNORE: %s" % (line))
 

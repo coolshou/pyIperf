@@ -66,7 +66,8 @@ if __name__ == '__main__':
     # code here
     ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
-'parallel':5, 'reverse':0, 'bitrate':0, 'windowsize':-1, 'omit':2}"
+'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
+'fmtreport':'m'}"
     port = 5201
     # ip = '192.168.70.147'
     ipcs = {}
@@ -107,6 +108,7 @@ if __name__ == '__main__':
         QCoreApplication.processEvents()
         time.sleep(0.5)
         # check_quit()
-    rs = ipc.get_resultdetail()
+    #rs = ipc.get_resultdetail()
+    rs = ipc.get_result()
     print(rs)
     sys.exit(APP.exec_())
