@@ -776,7 +776,9 @@ class IperfClient(QObject):
 
     def get_resultdetail(self):
         '''get store iperf all result'''
-        return self._o["Iperf"].get_resultdetail()
+        rc = self._o["Iperf"].get_resultdetail()
+        print("get_resultdetail: %s" % rc)
+        return
 
     def isRunning(self):
         # st = self._o["iperf"].isRunning() and self._o["iThread"].isRunning()
