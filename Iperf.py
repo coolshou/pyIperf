@@ -356,7 +356,7 @@ class Iperf(QObject):
 
     def get_result(self):
         '''get store iperf average result'''
-        print("get_result")
+        print("get_result: %s" % self._result)
         return str(self._result)
 
     def get_resultdetail(self):
@@ -477,7 +477,8 @@ class Iperf(QObject):
             # this suould be data we care
             if "local" in line:
                 # record header data
-                print("HEADER: %s" % (line))
+                # print("HEADER: %s" % (line))
+                self.log("0", "HEADER: %s" % line, 4)
             elif "Interval" in line:
                 # ignore header line
                 pass
@@ -488,12 +489,12 @@ class Iperf(QObject):
                 if "(omitted)" in line:
                     pass
                 elif "[SUM]" in line:
-                    print("parser: %s" % (line))
+                    # print("parser: %s" % (line))
                     if "sender" in line:
                         pass
                     elif "receiver" in line:
                         # record
-                        # print("parser: %s" % (line))
+                        print("parser: %s" % (line))
                         b =line.split()
                         if len(b) >= 6:
                             print("FOUND RESULT: %s" % b[5])
@@ -526,6 +527,7 @@ class Iperf(QObject):
         '''logging.INFO = 20'''
         if self._DEBUG > level:
             # print("Iperf log: (%s) %s" % (mType, msg))
+            msg = "(%s) %s" % (mType, msg)
             self.signal_debug.emit(self.__class__.__name__, msg)
 
     def traceback(self, err=None):
