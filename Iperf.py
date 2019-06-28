@@ -483,7 +483,6 @@ class Iperf(QObject):
                 pass
             else:
                 # real data need to parser
-                print("parser: %s" % (line))
                 self._detail.append(line)  # recore every line
                 # TODO: progress send line data
                 if "(omitted)" in line:
@@ -493,6 +492,7 @@ class Iperf(QObject):
                         pass
                     elif "receiver" in line:
                         #record
+                        print("parser: %s" % (line))
                         b =line.split()
                         if len(b) == 8:
                             self._result = b[5]
