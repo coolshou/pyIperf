@@ -357,11 +357,11 @@ class Iperf(QObject):
     def get_result(self):
         '''get store iperf average result'''
         print("get_result")
-        return self._result
+        return str(self._result)
 
     def get_resultdetail(self):
         '''get store iperf all result'''
-        return self._detail
+        return str(self._detail)
 
     def set_cmd(self, cmd):
         self.sCmd = cmd
@@ -491,10 +491,11 @@ class Iperf(QObject):
                     if "sender" in line:
                         pass
                     elif "receiver" in line:
-                        #record
-                        print("parser: %s" % (line))
+                        # record
+                        # print("parser: %s" % (line))
                         b =line.split()
                         if len(b) == 8:
+                            print("FOUND RESULT: %s" % b[5])
                             self._result = b[5]
                         else:
                             print("wrong format:%s" % b)
@@ -793,7 +794,7 @@ class IperfClient(QObject):
         '''get store iperf all result'''
         rc = self._o["Iperf"].get_resultdetail()
         print("get_resultdetail: %s" % rc)
-        return
+        return rc
 
     def isRunning(self):
         # st = self._o["iperf"].isRunning() and self._o["iThread"].isRunning()
