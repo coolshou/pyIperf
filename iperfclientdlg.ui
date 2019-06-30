@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>424</width>
+    <width>514</width>
     <height>644</height>
    </rect>
   </property>
@@ -397,7 +397,7 @@
          <item>
           <widget class="QCheckBox" name="cbReverse">
            <property name="text">
-            <string>Reverse(-R)</string>
+            <string>--reverse (-R):</string>
            </property>
           </widget>
          </item>
