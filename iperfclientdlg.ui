@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>644</width>
-    <height>410</height>
+    <width>424</width>
+    <height>644</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,85 +15,50 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QWidget" name="widget_2" native="true">
-     <property name="minimumSize">
-      <size>
-       <width>0</width>
-       <height>240</height>
-      </size>
+    <widget class="QGroupBox" name="gb_options">
+     <property name="title">
+      <string>Options</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <property name="spacing">
-       <number>2</number>
-      </property>
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
       <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
+       <number>3</number>
       </property>
       <property name="bottomMargin">
-       <number>0</number>
+       <number>3</number>
       </property>
       <item>
-       <widget class="QWidget" name="widget_3" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <property name="spacing">
-          <number>6</number>
-         </property>
-         <property name="leftMargin">
-          <number>6</number>
-         </property>
+       <widget class="QWidget" name="widget_6" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
          <property name="topMargin">
-          <number>6</number>
-         </property>
-         <property name="rightMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <property name="bottomMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <item>
-          <widget class="QLabel" name="lbHost">
-           <property name="text">
-            <string>Host(-c):</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="leHost">
-           <property name="minimumSize">
-            <size>
-             <width>200</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>127.0.0.1</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lbPort">
-           <property name="text">
-            <string>Port(-p):</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="sbPort">
-           <property name="minimum">
-            <number>1000</number>
-           </property>
-           <property name="maximum">
-            <number>65534</number>
-           </property>
-           <property name="value">
-            <number>5201</number>
-           </property>
+          <widget class="QWidget" name="widget_16" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_16">
+            <item>
+             <widget class="QLabel" name="lbPort">
+              <property name="text">
+               <string>--port (-p):</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="sbPort">
+              <property name="minimum">
+               <number>1000</number>
+              </property>
+              <property name="maximum">
+               <number>65534</number>
+              </property>
+              <property name="value">
+               <number>5201</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
@@ -117,7 +82,7 @@
             <item>
              <widget class="QLabel" name="lbFormat">
               <property name="text">
-               <string>format(-f):</string>
+               <string>--format (-f):</string>
               </property>
              </widget>
             </item>
@@ -172,14 +137,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="cbReverse">
-           <property name="text">
-            <string>Reverse(-R)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_8">
+          <spacer name="horizontalSpacer_9">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -198,55 +156,20 @@
        <widget class="QWidget" name="widget_15" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_15">
          <property name="spacing">
-          <number>2</number>
+          <number>6</number>
          </property>
          <property name="leftMargin">
-          <number>2</number>
+          <number>9</number>
          </property>
          <property name="topMargin">
-          <number>2</number>
+          <number>3</number>
          </property>
          <property name="rightMargin">
-          <number>2</number>
+          <number>9</number>
          </property>
          <property name="bottomMargin">
-          <number>2</number>
+          <number>3</number>
          </property>
-         <item>
-          <widget class="QWidget" name="widget_16" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout_16">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <property name="leftMargin">
-             <number>2</number>
-            </property>
-            <property name="topMargin">
-             <number>2</number>
-            </property>
-            <property name="rightMargin">
-             <number>2</number>
-            </property>
-            <property name="bottomMargin">
-             <number>2</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>--bind(-B):</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="lineEdit">
-              <property name="toolTip">
-               <string>bind to the interface associated with the address &lt;host&gt;</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
          <item>
           <widget class="QWidget" name="widget_5" native="true">
            <layout class="QHBoxLayout" name="horizontalLayout">
@@ -268,7 +191,7 @@
             <item>
              <widget class="QLabel" name="label">
               <property name="text">
-               <string>interval (-i):</string>
+               <string>--interval (-i):</string>
               </property>
              </widget>
             </item>
@@ -301,12 +224,205 @@
         </layout>
        </widget>
       </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="gb_server">
+     <property name="title">
+      <string>Server:</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_18">
+      <property name="spacing">
+       <number>2</number>
+      </property>
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="widget_18" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_20">
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>manager ip:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="cb_managerServer">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_6">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="gb_client">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Client:</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="spacing">
+       <number>2</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
+      <item>
+       <widget class="QWidget" name="widget_19" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_19">
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>manager ip:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="cb_managerClient">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget_3" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <property name="leftMargin">
+          <number>9</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>9</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="lbHost">
+           <property name="text">
+            <string>Host(-c):</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leHost">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>127.0.0.1</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbReverse">
+           <property name="text">
+            <string>Reverse(-R)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_8">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
       <item>
        <widget class="QWidget" name="widget_10" native="true">
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>105</height>
+          <height>154</height>
          </size>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -314,67 +430,67 @@
           <number>2</number>
          </property>
          <property name="leftMargin">
-          <number>2</number>
+          <number>9</number>
          </property>
          <property name="topMargin">
-          <number>2</number>
+          <number>3</number>
          </property>
          <property name="rightMargin">
-          <number>2</number>
+          <number>9</number>
          </property>
          <property name="bottomMargin">
-          <number>2</number>
+          <number>3</number>
          </property>
          <item>
           <widget class="QGroupBox" name="groupBox">
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>90</height>
+             <height>120</height>
             </size>
            </property>
            <property name="title">
             <string>Duration:</string>
            </property>
-           <layout class="QGridLayout" name="gridLayout">
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <property name="spacing">
+             <number>6</number>
+            </property>
             <property name="leftMargin">
              <number>0</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>3</number>
             </property>
             <property name="rightMargin">
              <number>0</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>3</number>
             </property>
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item row="0" column="0">
+            <item>
              <widget class="QWidget" name="widget_11" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>25</height>
+                <height>30</height>
                </size>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_12">
                <property name="spacing">
-                <number>0</number>
+                <number>2</number>
                </property>
                <property name="leftMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="topMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="rightMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="bottomMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <item>
                 <widget class="QRadioButton" name="rbDuration">
@@ -422,29 +538,29 @@
               </layout>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item>
              <widget class="QWidget" name="widget_12" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>25</height>
+                <height>30</height>
                </size>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_11">
                <property name="spacing">
-                <number>0</number>
+                <number>2</number>
                </property>
                <property name="leftMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="topMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="rightMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="bottomMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <item>
                 <widget class="QRadioButton" name="rbByte">
@@ -488,32 +604,45 @@
                  </item>
                 </widget>
                </item>
+               <item>
+                <spacer name="horizontalSpacer_7">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
               </layout>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item>
              <widget class="QWidget" name="widget_13" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>25</height>
+                <height>30</height>
                </size>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_13">
                <property name="spacing">
-                <number>0</number>
+                <number>2</number>
                </property>
                <property name="leftMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="topMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="rightMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <property name="bottomMargin">
-                <number>2</number>
+                <number>0</number>
                </property>
                <item>
                 <widget class="QRadioButton" name="rbBlocks">
@@ -577,7 +706,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="gbProtocal_2">
+          <widget class="QGroupBox" name="gbProtocal">
            <property name="focusPolicy">
             <enum>Qt::TabFocus</enum>
            </property>
@@ -590,27 +719,27 @@
            <property name="checkable">
             <bool>false</bool>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <layout class="QVBoxLayout" name="verticalLayout_2">
             <property name="spacing">
-             <number>2</number>
+             <number>6</number>
             </property>
             <property name="sizeConstraint">
              <enum>QLayout::SetDefaultConstraint</enum>
             </property>
             <property name="leftMargin">
-             <number>0</number>
+             <number>9</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>3</number>
             </property>
             <property name="rightMargin">
-             <number>0</number>
+             <number>9</number>
             </property>
             <property name="bottomMargin">
-             <number>0</number>
+             <number>3</number>
             </property>
             <item>
-             <widget class="QRadioButton" name="rbTCP_2">
+             <widget class="QRadioButton" name="rbTCP">
               <property name="text">
                <string>TCP</string>
               </property>
@@ -620,7 +749,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="rbUDP_2">
+             <widget class="QRadioButton" name="rbUDP">
               <property name="text">
                <string>UDP(-u)</string>
               </property>
@@ -642,16 +771,16 @@
           <number>6</number>
          </property>
          <property name="leftMargin">
-          <number>6</number>
+          <number>9</number>
          </property>
          <property name="topMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <property name="rightMargin">
-          <number>6</number>
+          <number>9</number>
          </property>
          <property name="bottomMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <item>
           <widget class="QWidget" name="widget_9" native="true">
@@ -777,50 +906,68 @@
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="widget" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <property name="leftMargin">
-          <number>6</number>
-         </property>
+       <widget class="QWidget" name="widget_2" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_21">
          <property name="topMargin">
-          <number>6</number>
-         </property>
-         <property name="rightMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <property name="bottomMargin">
-          <number>6</number>
+          <number>3</number>
          </property>
          <item>
-          <widget class="QLabel" name="lb_bitrate">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;target bitrate in bits/sec (0 for unlimited)&lt;/p&gt;&lt;p&gt;(default 1 Mbit/sec for UDP, unlimited for TCP)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>bitrate (-b)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="sbBitrate"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="comboBitrateUnit">
-           <item>
-            <property name="text">
-             <string>K</string>
+          <widget class="QWidget" name="widget" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <property name="leftMargin">
+             <number>0</number>
             </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>M</string>
+            <property name="topMargin">
+             <number>3</number>
             </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>G</string>
+            <property name="rightMargin">
+             <number>0</number>
             </property>
-           </item>
+            <property name="bottomMargin">
+             <number>3</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="lb_bitrate">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;target bitrate in bits/sec (0 for unlimited)&lt;/p&gt;&lt;p&gt;(default 1 Mbit/sec for UDP, unlimited for TCP)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="text">
+               <string>bitrate (-b)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="sbBitrate"/>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBitrateUnit">
+              <item>
+               <property name="text">
+                <string>K</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>M</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>G</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
@@ -830,16 +977,16 @@
              <number>2</number>
             </property>
             <property name="leftMargin">
-             <number>2</number>
+             <number>9</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>9</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>9</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>9</number>
             </property>
             <item>
              <widget class="QLabel" name="lbMTU">
@@ -906,8 +1053,14 @@
     </spacer>
    </item>
    <item>
-    <widget class="QWidget" name="widget_6" native="true">
+    <widget class="QWidget" name="w_btn" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
       <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
