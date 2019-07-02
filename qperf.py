@@ -17,7 +17,7 @@ from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
                           QMutex, Qt, QFileInfo)
 from PyQt5.QtWidgets import (QApplication, QMainWindow,  QSystemTrayIcon,
                              QErrorMessage, QMessageBox, QAbstractItemView,
-                             QTableWidgetItem, QFileDialog, QDialog, 
+                             QTableWidgetItem, QFileDialog, QDialog,
                              QRadioButton)
 from PyQt5.QtGui import (QIcon, QStandardItemModel )
 from PyQt5.uic import loadUi
@@ -32,11 +32,14 @@ from dlgConfig import Ui_Dialog as dlgConfig
 
 
 class QtHandler(logging.Handler):
+
     def __init__(self):
         logging.Handler.__init__(self)
+
     def emit(self, record):
         record = self.format(record)
-        if record: XStream.stdout().write('%s\n'%record)
+        if record:
+            XStream.stdout().write('%s\n' % record)
         # originally: XStream.stdout().write("{}\n".format(record))
 
 
@@ -51,39 +54,47 @@ class XStream(QObject):
     _stdout = None
     _stderr = None
     messageWritten = pyqtSignal(str)
-    def flush( self ):
+
+    def flush(self):
         pass
-    def fileno( self ):
+
+    def fileno(self):
         return -1
-    def write( self, msg ):
-        if ( not self.signalsBlocked() ):
+
+    def write(self, msg):
+        if (not self.signalsBlocked()):
             self.messageWritten.emit(msg)
+
     @staticmethod
     def stdout():
-        if ( not XStream._stdout ):
+        if (not XStream._stdout):
             XStream._stdout = XStream()
             sys.stdout = XStream._stdout
         return XStream._stdout
+
     @staticmethod
     def stderr():
-        if ( not XStream._stderr ):
+        if (not XStream._stderr):
             XStream._stderr = XStream()
             sys.stderr = XStream._stderr
         return XStream._stderr
 
+
 locker = QMutex()
 
+
 class columnResult(Enum):
-    colDate=0
-    colPlace=colDate+1
-    colDegree=colPlace+1
-    colTx=colDegree+1
-    colRx=colTx+1
-    
+    colDate = 0
+    colPlace = colDate + 1
+    colDegree = colPlace + 1
+    colTx = colDegree + 1
+    colRx = colTx + 1
+
+
 class MainWindow(QMainWindow):
     __VERSION__ = "20180907"
     signal_debug = pyqtSignal(str, str)
-    
+
     def __init__(self):
         super(MainWindow, self).__init__()
         if getattr(sys, 'frozen', False):
@@ -92,71 +103,70 @@ class MainWindow(QMainWindow):
         else:
             # we are running in a normal Python environment
             basedir = os.path.dirname(__file__)
-            
+
         self.settings = QSettings('qperf.ini', QSettings.IniFormat)
         self.settings.setFallbacksEnabled(False)
-        
+
         self.preventSystemShutdown = False; #when result is not saved!!
         self.stoped = False
-               
+
         self.logFilePath = os.path.join(basedir, 'log')
         if not os.path.isdir(self.logFilePath):
             os.mkdir(self.logFilePath)
-            
+
         icon_main = os.path.join(basedir, 'images', 'qperf.png')
-        #load UI
+        # load UI
         loadUi(os.path.join(basedir, 'qperf.ui'),self)
-        self.setWindowTitle("%s(%s) - %s" % ("qperf", "pyIperf", self.__VERSION__))        
+        self.setWindowTitle("%s(%s) - %s" % ("qperf", "pyIperf", self.__VERSION__))
         self.setWindowIcon(QIcon(icon_main))
-        #TODO: tabChart (current hide)
-        #self.twResult.setTabEnabled(0,False) #enable/disable the tab
-        
-        #comport
+        # TODO: tabChart (current hide)
+        # self.twResult.setTabEnabled(0,False) #enable/disable the tab
+
+        # comport
         ls_comports = self.list_comports()
         self.comboComPort.addItems(ls_comports)
         ls_baudrates = self.list_baudrates()
         self.comboBaulRate.addItems(ls_baudrates)
-        #setting
+        # setting
         self.loadSetting()
-        
+
         self.rbIperf2.toggled.connect(lambda:self.setIperfVersion(self.rbIperf2))
         self.rbIperf3.toggled.connect(lambda:self.setIperfVersion(self.rbIperf3))
-        
+
         self.pbStart.clicked.connect(self.startClient)
         self.pbStop.clicked.connect(self.stopClient)
-        #self.pbSave.clicked.connect(self.saveResult)
+        # self.pbSave.clicked.connect(self.saveResult)
         self.pbSave.clicked.connect(self.actionSave.trigger)
         self.pbClear.clicked.connect(self.clearResult)
-        #action
+        # action
         self.actionAbout.triggered.connect(self.showAbout)
         self.actionSave.triggered.connect(self.saveResult)
         self.actionSave.changed.connect(self.setResultChange)
         self.actionConfig.triggered.connect(self.showConfig)
         self.tableResult.cellChanged.connect(self.tableResultChanged)
-        #indexOfChecked = [self.gbProtocal.buttons()[x].isChecked() for x in range(len(self.gbProtocal.buttons()))].index(True)
-        #print(indexOfChecked)
-        #load setting
+        # indexOfChecked = [self.gbProtocal.buttons()[x].isChecked() for x in range(len(self.gbProtocal.buttons()))].index(True)
+        # print(indexOfChecked)
+        # load setting
         self.txC = None
         self.rxC = None
-        
-        
+
     def __del__(self):
         ''' destructure     '''
         if self.s.isRunning():
             self.s.stop()
         pass
 
-    @pyqtSlot(QRadioButton)    
+    @pyqtSlot(QRadioButton)
     def setIperfVersion(self, b):
         if b.text() == "iperf 2":
             port=5001
         elif b.text() == "iperf 3":
             port=5201
-            
+
         self.sbPort.setValue(port)
         #self.gbAPConsole.setEnabled(bStat)
         #self.gbAPTelnet.setEnabled(not bStat)
-        
+
     @pyqtSlot()
     def showConfig(self):
         #show config
@@ -165,17 +175,17 @@ class MainWindow(QMainWindow):
         dialog.ui.setupUi(dialog)
         dialog.exec_()
         dialog.show() #show module, wait use apply setting?
-        
+
     @pyqtSlot()
     def showAbout(self):
         #print("showAbout")
         sVer = "Version: %s\n" % self.__VERSION__
         #if self.worker:
         #sVer = sVer + " bitcomit.py version: %s" % bitcomit.__version__
-        
-        QMessageBox.information(self, "About - %s" % self.windowTitle(), 
+
+        QMessageBox.information(self, "About - %s" % self.windowTitle(),
                                 sVer, QMessageBox.Ok)
-    
+
     @pyqtSlot(int,int)
     def tableResultChanged(self, iRow, iCol):
         if not self.actionSave.isEnabled():
@@ -183,15 +193,15 @@ class MainWindow(QMainWindow):
 
         if not self.pbClear.isEnabled():
             self.pbClear.setEnabled(True)
-                
-    @pyqtSlot()            
+
+    @pyqtSlot()
     def setResultChange(self):
         state = self.actionSave.isEnabled()
         self.pbSave.setEnabled(state)
         self.pbClear.setEnabled(state)
         self.preventSystemShutdown = state
 
-    
+
     def list_comports(self):
         ''' return system's all serial port name in list'''
         lst = []
@@ -201,7 +211,7 @@ class MainWindow(QMainWindow):
             # print("desc: %s" % desc)
             # print("hwid: %s" % hwid)
         return lst
-    
+
     def list_baudrates(self):
         ''' return baudrates (9600~115200) in list'''
         lst = []
@@ -217,7 +227,7 @@ class MainWindow(QMainWindow):
             self.rbIperf2.setChecked(True)
         if ver == 3:
             self.rbIperf3.setChecked(True)
-            
+
         self.leHost.setText(self.settings.value('Host', "127.0.0.1"))
         self.sbPort.setValue(int(self.settings.value('Port', 5201)))
         idx = self.comboBoxFormat.findText(self.settings.value('Format', 'M') , Qt.MatchFixedString)
@@ -225,7 +235,7 @@ class MainWindow(QMainWindow):
         self.sbDuration.setValue(int(self.settings.value('Duration', 10)))
         self.spParallel.setValue(int(self.settings.value('Parallel', 1)))
         self.cbReverse.setCheckState(int(self.settings.value('Reverse', 0)))
-        
+
         protocal = self.settings.value('Protocal', 'TCP')
         if protocal in 'TCP':
             self.rbTCP.setChecked(True)
@@ -244,7 +254,7 @@ class MainWindow(QMainWindow):
             self.cbTurnTable.setChecked(True)
         else:
             self.cbTurnTable.setChecked(False)
-        
+
         idx = self.comboComPort.findText(self.settings.value('ComPort', 'com1') , Qt.MatchFixedString)
         self.comboComPort.setCurrentIndex(idx)
         idx = self.comboBaulRate.findText(self.settings.value('BaulRate', str(115200)) , Qt.MatchFixedString)
@@ -252,8 +262,8 @@ class MainWindow(QMainWindow):
         self.ttStart.setValue(int(self.settings.value('TurnTableStart', 0)))
         self.ttEnd.setValue(int(self.settings.value('TurnTableEnd', 360)))
         self.ttStep.setValue(int(self.settings.value('TurnTableStep', 30)))
-        
-        #test       
+
+        #test
         self.lePlace.setText(self.settings.value('Place', "New place"))
         self.cbTx.setCheckState(int(self.settings.value('Tx', 2)))
         self.cbRx.setCheckState(int(self.settings.value('Rx', 0)))
@@ -266,7 +276,7 @@ class MainWindow(QMainWindow):
         elif self.rbIperf3.isChecked():
             ver = 3
         self.settings.setValue('IperfVersion', ver)
-            
+
         self.settings.setValue('Host', self.leHost.text())
         self.settings.setValue('Port', self.sbPort.text())
         self.settings.setValue('Format', self.comboBoxFormat.currentText())
@@ -291,7 +301,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue('TurnTableStart', self.ttStart.text())
         self.settings.setValue('TurnTableEnd', self.ttEnd.text())
         self.settings.setValue('TurnTableStep', self.ttStep.text())
-        
+
         #test
         self.settings.setValue('Place', self.lePlace.text())
         self.settings.setValue('Tx', self.cbTx.checkState())
@@ -308,7 +318,7 @@ class MainWindow(QMainWindow):
     def setStop(self, bState):
         print("setStop: %s" % bState )
         self.stoped = bState
-        
+
     @pyqtSlot(int, str)
     def parserServerReult(self, iType, msg):
         self.log(str(iType), "#TODO: parserServerReult: %s, %s" %( iType, msg))
@@ -322,14 +332,14 @@ class MainWindow(QMainWindow):
         itm = self.tableResult.item(row, col)
         if itm:
             self.tableResult.scrollToItem(itm, QAbstractItemView.PositionAtCenter)
-        pass 
-           
+        pass
+
     @pyqtSlot(int, int, int, str)
     def parserReult(self, iRow, iCol, iType, msg):
         print("parserReult: %s, %s, %s, %s" %(iRow, iCol, iType, msg))
         if self.rbIperf3.isChecked():
             #iperf v3 format
-            if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or  
+            if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or
                 (('receiver' in msg) and (iCol == columnResult.colRx.value))):
                 #self.log(str(iType), "parserReult: (%s,%s) %s = %s" % (iRow, iCol, iType, msg))
                 print("parserReult iType: %s" % iType)
@@ -365,29 +375,29 @@ class MainWindow(QMainWindow):
         #locker.lock()
         #self.stoped = True
         #locker.unlock()
-    
+
     def getCurrentTime(self):
         return datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    
+
     @pyqtSlot(str,str)
     def log(self, sType, sMsg):
         #print("log: %s = %s" % (sType, sMsg))
         if not self.teLog is None:
             self.teLog.append(sMsg)
-    
+
     def logToFile(self, msg):
         if self.logFileName:
             f = open(self.logFileName, 'a')
             #f.writelines(msg)
             f.write(msg)
             f.close()
-            
+
     @pyqtSlot(str,str)
     def debug(self, sType, sMsg):
         print("debug: %s = %s" % (sType, sMsg))
         if not self.teLog is None:
             self.teLog.append(sMsg)
-            
+
     @pyqtSlot(int, int, str,str)
     def error(self, iRow, iCol, sType, sMsg):
         print("error: %s = %s" % (sType, sMsg))
@@ -395,7 +405,7 @@ class MainWindow(QMainWindow):
             self.teLog.append(sMsg)
         self.updateData( iRow, iCol, "%s" % (sMsg))
         self.errorStoped = True
-        
+
     def setRunning(self, bStatus):
         self.pbStart.setEnabled(not bStatus)
         self.pbStop.setEnabled(bStatus)
@@ -403,16 +413,16 @@ class MainWindow(QMainWindow):
         self.actionConfig.setEnabled(not bStatus)
         self.errorStoped = not bStatus
 
-    @pyqtSlot(bool)    
+    @pyqtSlot(bool)
     def stopClient(self, isCheck):
         if self.txC:
             if self.txC.isRunning():
-               self.txC.stop() 
+               self.txC.stop()
                #self.stoped = True #crash!!
         if self.rxC:
             if self.rxC.isRunning():
-               self.rxC.stop() 
-    
+               self.rxC.stop()
+
     @pyqtSlot(bool)
     def startClient(self, isCheck):
         self.setRunning(True)
@@ -442,17 +452,17 @@ class MainWindow(QMainWindow):
         iWindowSize = self.sbWindowSize.value()
         sWindowSizeUnit = self.comboWindowSizeUnit.currentText()
         iMTU = self.sbMTU.value()
-        
+
         iBitrate = self.sbBitrate.value()
         sBitrateUnit = self.comboBitrateUnit.currentText()
 
-        print("TODO: TurnTable")        
+        print("TODO: TurnTable")
         #print("cbTx: %s" % self.cbTx.isChecked())
         #print("cbRx: %s" % self.cbRx.isChecked())
         #print("cbTxRx: %s" % self.cbTxRx.isChecked())
         self.logFileName = os.path.join(self.logFilePath, "%s.log" % self.getCurrentTime())
         self.logToFile("datetime, place, degree, Tx, Rx, TxRx\n")
-        
+
         #TODO: iperf server? or other place
         self.s = IperfServer(host='127.0.0.1', port=port, iperfver=ver, bTcp=isTCP)
         self.s.signal_result.connect(self.parserServerReult)
@@ -473,7 +483,7 @@ class MainWindow(QMainWindow):
             print("tx : %s" % self.txC.isRunning())
             self.txC.startTest()
             print("check tx : %s" % self.txC.isRunning())
-            
+
         if not self.rxC:
             print("rxC: %s" % ver)
             self.rxC = IperfClient(host, port, iperfver=ver, bTcp=isTCP)
@@ -485,7 +495,7 @@ class MainWindow(QMainWindow):
             print("rx : %s" % self.rxC.isRunning())
             self.rxC.startTest()
             print("check rx : %s" % self.rxC.isRunning())
-    
+
         #cmd = []
         for degree in range(self.ttStart.value(),self.ttEnd.value(), self.ttStep.value()):
             print("TODO: TurnTable control!! %s" % degree)
@@ -504,16 +514,16 @@ class MainWindow(QMainWindow):
                 try:
                     self.txC.setRowCol(iRow, columnResult.colTx.value)
                     self.txC.setTartgetHost(host, port)
-                    self.txC.setClientCmd(sFormat, isTCP, duration, parallel, 
+                    self.txC.setClientCmd(sFormat, isTCP, duration, parallel,
                                           bReverse, iBitrate, sBitrateUnit,
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)
                     #cmd.append([degree, iRow, columnResult.colTx.value, self.txC.sCmd])
-                    
-                    while iWait < duration+3 : 
+
+                    while iWait < duration+3 :
                         self.progressBar.setValue(iWait)
                         time.sleep(1)
-                        QApplication.processEvents() 
+                        QApplication.processEvents()
                         iWait = iWait + 1
                         if self.stoped or self.errorStoped:
                             break
@@ -532,11 +542,11 @@ class MainWindow(QMainWindow):
                                           iWindowSize, sWindowSizeUnit,
                                           iMTU)
                     #cmd.append([degree, iRow, columnResult.colTx.value, self.txC.sCmd])
-                    
-                    while iWait < duration+3 : 
+
+                    while iWait < duration+3 :
                         self.progressBar.setValue(iWait)
                         time.sleep(1)
-                        QApplication.processEvents() 
+                        QApplication.processEvents()
                         iWait = iWait + 1
                         if self.stoped or self.errorStoped:
                             break
@@ -549,28 +559,28 @@ class MainWindow(QMainWindow):
                 iWait = 0
                 try:
                     print("TODO TxRx Bi-direction")
-                    
-                    while iWait < duration+3 : 
+
+                    while iWait < duration+3 :
                         self.progressBar.setValue(iWait)
                         time.sleep(1)
-                        QApplication.processEvents() 
+                        QApplication.processEvents()
                         iWait = iWait + 1
                         if self.stoped or self.errorStoped:
                             break
                 except:
                     print("something error!!!!!!!!!!!!!! ")
                     self.traceback()
-                    
+
             self.logToFile("\n")
             iRow= iRow + 1
             if self.stoped or self.errorStoped:
                 break
-            
+
         print("finish")
         self.progressBar.setValue(0)
         self.setRunning(False)
         #self.setRunning(False)
-    
+
     def clearResult(self):
         msgBox = QMessageBox()
         msgBox.setText("Warning all test result will be delete")
@@ -583,14 +593,14 @@ class MainWindow(QMainWindow):
             for i in reversed(range(self.tableResult.rowCount())):
                 self.tableResult.removeRow(i)
             self.actionSave.setEnabled(False)
-            
+
     def saveResult(self):
         filename,ext = QFileDialog.getSaveFileName(
                 self, 'Save File', '', 'CSV(*.csv)')
         if filename:
             if not QFileInfo(filename).suffix():
                 filename += ".csv"
-            
+
             with open(filename, 'w') as stream:
                 writer = csv.writer(stream)
                 #header
@@ -614,7 +624,7 @@ class MainWindow(QMainWindow):
                             rowdata.append('')
                     print("rowdata: %s" % rowdata)
                     writer.writerow(rowdata)
-            stream.close()         
+            stream.close()
 
     def closeEvent(self, event):
         #self.stoped = True
@@ -629,15 +639,15 @@ class MainWindow(QMainWindow):
         if self.rxC:
             if self.rxC.isRunning():
                 print('Rx client still running, stop it')
-                self.rxC.stop()            
-        
-        self.saveSetting()            
+                self.rxC.stop()
+
+        self.saveSetting()
 
     def traceback(self, err=None):
         exc_type, exc_obj, tb = sys.exc_info()
-        # This function returns the current line number set in the traceback object.  
-        lineno = tb.tb_lineno  
-        self.signal_debug.emit(self.__class__.__name__, 
+        # This function returns the current line number set in the traceback object.
+        lineno = tb.tb_lineno
+        self.signal_debug.emit(self.__class__.__name__,
                                "%s - %s - Line: %s" % (exc_type, exc_obj, lineno))
 
 # main
