@@ -16,10 +16,11 @@ import datetime
 import subprocess
 import os
 import platform
-#import logging
+# import logging
 import psutil
 import ast
-import zlib
+# import zlib
+import re
 
 try:
     from PyQt5.QtCore import (QCoreApplication, QThread,
@@ -220,6 +221,11 @@ class iperfResult():
         return size.split(" ")
 
 
+IPERFprotocal = {
+    'TCP': 0,  # TCP
+    'UDP': 1,   # UDP
+}
+
 '''
 class IperfThread(QThread):
     def run(self):
@@ -276,10 +282,7 @@ class Iperf(QObject):
         # if host:
         #     self.host = host
         self.port = port
-        # if bTcp:
-        #     self.protocal = ""
-        # else:
-        #     self.protocal = "-u"
+        self._tcp = IPERFprotocal.get("TCP")  # 0: TCP, 1: UDP,...
 
         self.stoped = False  # user stop
 
@@ -291,6 +294,16 @@ class Iperf(QObject):
         self._result = ""  # store final sum
         self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
+        '''store iperf UDP packet error rate (PER) result'''
+        self._per = ""
+
+    def set_protocal(self, protocal):
+        if protocal in [0, "0"]:
+            self._tcp = IPERFprotocal.get("TCP")
+        elif protocal in [1, "1"]:
+            self._tcp = IPERFprotocal.get("UDP")
+        else:
+            print("Unknown protocal:%s" % protocal)
 
     def enqueue_output(self, out, queue):
         for line in iter(out.readline, b''):
@@ -355,9 +368,13 @@ class Iperf(QObject):
     def get_port(self):
         return self.port
 
+    def get_packeterrorrate(self):
+        '''get store iperf UDP packet error rate (PER) result'''
+        return str(self._per)
+
     def get_result(self):
         '''get store iperf average result'''
-        print("get_result: %s" % self._result)
+        # print("get_result: %s" % self._result)
         return str(self._result)
 
     def get_resultunit(self):
@@ -503,9 +520,17 @@ class Iperf(QObject):
                         print("parser: %s" % (line))
                         b =line.split()
                         if len(b) >= 7:
-                            print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
+                            # print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
                             self._result = b[5]
                             self._resultunit = b[6]
+                            if self._tcp == IPERFprotocal.get("UDP"):
+                                ds = re.findall("\d+", b[10])
+                                if len(ds) > 0:
+                                    per = ds[0]
+                                else:
+                                    per = None
+                                print("Get UDP PER: %s" % per)
+                                self._per = per
                         else:
                             print("wrong format:%s" % b)
 
@@ -652,13 +677,15 @@ class IperfClient(QObject):
         self.isReverse = False
         self.log("0", "IperfClient ver:%s" % iperfver, 3)
 
+
         self._o["Iperf"] = Iperf(port, iperfver=iperfver)
         self._o["Iperf"].signal_debug.connect(self._on_debug)
         self._o["Iperf"].signal_error.connect(self.error)
         self._o["Iperf"].signal_result.connect(self._on_result)
         self._o["Iperf"].signal_finished.connect(self._on_finished)
-
+        # most place there
         self._parser_args(args)
+
         # self._o["Iperf"].signal_scanning.connect(self.doScanning)
         # self._o["Iperf"].signal_scanResult.connect(self.updateScanResult)
         # self._o["iThread"] = IperfThread()
@@ -713,6 +740,7 @@ class IperfClient(QObject):
 
         self.server = ds.get("server")
         protocal = ds.get("protocal")
+        self._o["Iperf"].set_protocal(protocal)
         duration = ds.get("duration")
         parallel = ds.get("parallel")
         reverse = ds.get("reverse")
@@ -796,6 +824,10 @@ class IperfClient(QObject):
 
     def get_port(self):
         return self._o["Iperf"].get_port()
+
+    def get_packeterrorrate(self):
+        '''get store iperf UDP packet error rate (PER) result'''
+        return self._o["Iperf"].get_packeterrorrate()
 
     def get_result(self):
         '''get store iperf average result'''

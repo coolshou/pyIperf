@@ -10,7 +10,7 @@ Created on Wed Jun 26 09:31:22 2019
 import sys
 import signal
 import time
-from Iperf import IperfClient
+from Iperf import IperfClient, IPERFprotocal
 
 try:
     # from PyQt5.QtWidgets import (QApplication)
@@ -64,10 +64,17 @@ if __name__ == '__main__':
     APP.startTimer(200)
 
     # code here
+    # TCP
+#     ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+# 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+# 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
+# 'fmtreport':'m'}"
+    # UDP
     ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
-'fmtreport':'m'}"
+'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
+
     port = 5201
     # ip = '192.168.70.147'
     ipcs = {}
@@ -108,7 +115,9 @@ if __name__ == '__main__':
         QCoreApplication.processEvents()
         time.sleep(0.5)
         # check_quit()
-    #rs = ipc.get_resultdetail()
+    # rs = ipc.get_resultdetail()
     rs = ipc.get_result()
-    print(rs)
+    print("result:%s" % rs)
+    rs = ipc.get_packeterrorrate()
+    print("PER:%s" % rs)
     sys.exit(APP.exec_())
