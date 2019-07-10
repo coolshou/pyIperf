@@ -88,7 +88,7 @@ class IperfClientTest(unittest.TestCase):
         # UDP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
     'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-    'parallel':1, 'reverse':1, 'bitrate':4.23, 'windowsize':64, 'omit':2, \
+    'parallel':1, 'reverse':1, 'bitrate':4.23, 'unit_bitrate'='M', 'windowsize':64, 'omit':2, \
     'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
         port = 5201

@@ -748,6 +748,7 @@ class IperfClient(QObject):
         parallel = ds.get("parallel")
         reverse = ds.get("reverse")
         bitrate = ds.get("bitrate")
+        unit_bitrate = ds.get("unit_bitrate")
         windowsize = ds.get("windowsize")
         fmtreport = ds.get("fmtreport")
         omit = ds.get("omit")
@@ -774,7 +775,7 @@ class IperfClient(QObject):
 
         if bitrate > 0:
             self.sCmd.append('-b')
-            self.sCmd.append("%s" % bitrate)
+            self.sCmd.append("%s%s" % (bitrate, unit_bitrate))
         #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
         if windowsize > 0:
