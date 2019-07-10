@@ -676,6 +676,7 @@ class IperfClient(QObject):
         self.server = ""
         self.port = port
         self.sCmd = ""
+        self._connect-timeout = 5000  # ms
 
         self.isReverse = False
         self.log("0", "IperfClient ver:%s" % iperfver, 3)
@@ -793,6 +794,10 @@ class IperfClient(QObject):
         if fmtreport:
             self.sCmd.append('-f')
             self.sCmd.append(fmtreport)
+
+        # --connect-timeout ms
+        self.sCmd.append('--connect-timeout')
+        self.sCmd.append('%s' % self._connect-timeout)
 
         # if sFromat:
 
