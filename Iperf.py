@@ -670,13 +670,14 @@ class IperfClient(QObject):
         #                                   iperfver=iperfver,
         #                                   parent=parent)
         # index for report
-        self.row = iRow
-        self.col = iCol
+        self._opt = {}
+        self._opt["row"] = iRow
+        self._opt["col"] = iCol
         self._o = {}  # store obj
         self.server = ""
         self.port = port
         self.sCmd = ""
-        self._connect-timeout = 5000  # ms
+        self._opt["conTimeout"]  = 5000  # ms
 
         self.isReverse = False
         self.log("0", "IperfClient ver:%s" % iperfver, 3)
@@ -699,13 +700,13 @@ class IperfClient(QObject):
         self._o["iThread"].start()
 
     def setRowCol(self, Row, Col):
-        self.row = Row
-        self.col = Col
+        self._opt["row"] = Row
+        self._opt["col"] = Col
 
     @pyqtSlot(str, str)
     def error(self, sType, sMsg):
         print("No iperf command (%s) %s" % (sType, sMsg))
-        self.signal_error.emit(self.row, self.col, sType, sMsg)
+        self.signal_error.emit(self._opt["row"], self._opt["col"], sType, sMsg)
 
     @pyqtSlot(str, str)
     def _on_debug(self, sType, sMsg):
@@ -716,7 +717,8 @@ class IperfClient(QObject):
     @pyqtSlot(int, int, str)
     def _on_result(self, tid, iType, msg):
         print("IperfClient _on_result (%s)%s: %s" % (tid, iType, msg))
-        self.signal_result.emit(self.row, self.col, tid, iType, msg)
+        self.signal_result.emit(self._opt["row"], self._opt["col"],
+                                tid, iType, msg)
 
     @pyqtSlot(int, str)
     def _on_finished(self, iCode, msg):
@@ -797,7 +799,7 @@ class IperfClient(QObject):
 
         # --connect-timeout ms
         self.sCmd.append('--connect-timeout')
-        self.sCmd.append('%s' % self._connect-timeout)
+        self.sCmd.append('%s' % self._opt["conTimeout"])
 
         # if sFromat:
 
