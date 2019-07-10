@@ -524,11 +524,14 @@ class Iperf(QObject):
                             self._result = b[5]
                             self._resultunit = b[6]
                             if self._tcp == IPERFprotocal.get("UDP"):
-                                ds = re.findall("\d+", b[10])
-                                if len(ds) > 0:
-                                    per = ds[0]
-                                else:
-                                    per = None
+                                # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+                                # ds = re.findall("\d+", b[10])
+                                per = b[10]
+                                per = per[1:-2]  # remove ( and %)
+                                # if len(ds) > 0:
+                                #     per = ds[0]
+                                # else:
+                                #     per = None
                                 print("Get UDP PER: %s" % per)
                                 self._per = per
                         else:
