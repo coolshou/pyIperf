@@ -73,6 +73,13 @@ class IperfClientTest(unittest.TestCase):
         # self.wl = Wlan()
 
     def test_get_packeterrorrate(self):
+        '''get UDP packeterrorrate (PER)'''
+        # MCS0
+        # 'bitrate':4.23,
+        # 'windowsize':64
+        # MCS7
+        # 'bitrate':42.25,
+
         # TCP
         #  ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         # 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
@@ -81,7 +88,7 @@ class IperfClientTest(unittest.TestCase):
         # UDP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
     'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-    'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
+    'parallel':1, 'reverse':1, 'bitrate':4.23, 'windowsize':64, 'omit':2, \
     'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
         port = 5201
