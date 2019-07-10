@@ -831,7 +831,9 @@ class IperfClient(QObject):
 
     def get_packeterrorrate(self):
         '''get store iperf UDP packet error rate (PER) result'''
-        return self._o["Iperf"].get_packeterrorrate()
+        rc = self._o["Iperf"].get_packeterrorrate()
+        print("get_packeterrorrate: %s" % rc)
+        return
 
     def get_result(self):
         '''get store iperf average result'''
