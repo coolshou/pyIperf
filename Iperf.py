@@ -518,7 +518,7 @@ class Iperf(QObject):
                     elif "receiver" in line:
                         # record
                         print("parser: %s" % (line))
-                        b =line.split()
+                        b = line.split()
                         if len(b) >= 7:
                             # print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
                             self._result = b[5]
@@ -533,7 +533,6 @@ class Iperf(QObject):
                                 self._per = per
                         else:
                             print("wrong format:%s" % b)
-
 
         else:
             # print("IGNORE: %s" % (line))
@@ -656,6 +655,7 @@ class IperfClient(QObject):
     # row, col, thread, iParallel, data
     signal_result = pyqtSignal(int, int, int, int, str)
     signal_finished = pyqtSignal(int, str)
+    # row, col, sType, sMsg
     signal_error = pyqtSignal(int, int, str, str)
     signal_debug = pyqtSignal(str, str)
 
