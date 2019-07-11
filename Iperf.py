@@ -239,15 +239,16 @@ DEFAULT_IPERF2_PORT = 5001
 
 class Iperf(QObject):
     '''python of iperf2/iperf3 class'''
-    __VERSION__ = '20180726'
+    __VERSION__ = '20190711'
 
-    signal_result = pyqtSignal(int, int, str)  # thread id, iParallel, data
+    # thread id, iParallel, data
+    signal_result = pyqtSignal(int, int, str)
     signal_finished = pyqtSignal(int, str)
     signal_error = pyqtSignal(str, str)
     signal_debug = pyqtSignal(str, str)  # class, msg
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, str ,str)
+    sig_data = pyqtSignal(int, str, str)
 
     default_port = DEFAULT_IPERF3_PORT
 
@@ -293,7 +294,7 @@ class Iperf(QObject):
         # self.mutex.unlock()
         self.sCmd = []
 
-        self.iParallel = 0  # for report result use
+        self._parallel = 1  # for report result use
 
         # store result
         self._result = ""  # store final sum
@@ -396,6 +397,12 @@ class Iperf(QObject):
         self.sCmd = cmd
         locker.unlock()
 
+    def set_parallel(self, parallel):
+        '''set parallel to get correct result'''
+        if parallel <= 0:
+            parallel = 1
+        self._parallel = parallel
+
     @pyqtSlot()
     def task(self):
         # pexpect way to run program, !!!!not work on windows!!!!
@@ -435,8 +442,13 @@ class Iperf(QObject):
                                 else:
                                     rs = line.rstrip()
                                     if rs:
-                                        # output result
-                                        self._handel_dataline(tID, rs)
+                                        if type(rs) == list:
+                                            for val in rs:
+                                                # handle line by line
+                                                self._handel_dataline(tID, val)
+                                                QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                        else:
+                                            self._handel_dataline(tID, rs)
                                 if self.stoped:
                                     self.signal_finished.emit(1,
                                                               "signal_finished!!")
@@ -515,13 +527,15 @@ class Iperf(QObject):
                 # ignore header line
                 pass
             else:
-                # real data need to parser
-                self._detail.append(line)  # recore every line
-                # --parallel num
-                iPall = re.findall("\d+", line[:5])
+                # record
+                # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+                # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
 
-                if len(iPall) > 0:
-                    # print("iPall: %s type(%s)" % (iPall[0], type(iPall[0])))
+                self._detail.append(line)  # recore every line
+                # --parallel index
+                # may be "SUM" or num
+                iPall = line[1:4].split()
+                if type(iPall) == list:
                     iPall = iPall[0]
                 # result data
                 data = line[6:].strip()
@@ -535,11 +549,15 @@ class Iperf(QObject):
                 elif "sender" in line:
                     pass
                 elif "receiver" in line:
-                    # record
-                    # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
-                    # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+                    # real data need to parser
                     self.log(tID, "parser: %s" % (data))
-                    self.signal_result.emit(tID, 0, data)
+                    self.signal_result.emit(tID, 0, data)  # TODO:
+                    if self._parallel > 1:
+                        if "SUM" == iPall:
+                            #only procress data when --parallel > 1
+                            pass
+                        else:
+                            return
                     b = data.split()
                     if len(b) >= 7:
                         # print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
@@ -549,16 +567,12 @@ class Iperf(QObject):
                             # ds = re.findall("\d+", b[10])
                             per = b[9]
                             per = per[1:-2]  # remove ( and %)
-                            # if len(ds) > 0:
-                            #     per = ds[0]
-                            # else:
-                            #     per = None
-                            print("Get UDP PER: %s" % per)
+                            # print("Get UDP PER: %s" % per)
                             self._per = per
                     else:
                         print("wrong format:%s" % b)
                 else:
-                    # print("%s" % line)
+                    # print("%s:%s" % (iPall, data))
                     self.sig_data.emit(tID, iPall, data)
 
         else:
@@ -608,7 +622,7 @@ class IperfServer(QObject):
     signal_debug = pyqtSignal(str, str)  # class, msg
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, str ,str)
+    sig_data = pyqtSignal(int, str, str)
 
     def __init__(self, port=DEFAULT_IPERF3_PORT, iperfver=3, parent=None):
         super(IperfServer, self).__init__(parent)
@@ -694,6 +708,7 @@ class IperfServer(QObject):
             # print("IperfServer log: (%s) %s" % (mType, msg))
             self.signal_debug.emit(self.__class__.__name__, msg)
 
+
 # class IperfClient(Iperf):
 class IperfClient(QObject):
     # row, col, thread, iParallel, data
@@ -704,7 +719,7 @@ class IperfClient(QObject):
     signal_debug = pyqtSignal(str, str)
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, str ,str)
+    sig_data = pyqtSignal(int, str, str)
 
     def __init__(self, port=5201, args=None,
                  iRow=0, iCol=0, iperfver=3, parent=None):
@@ -721,11 +736,10 @@ class IperfClient(QObject):
         self.server = ""
         self.port = port
         self.sCmd = ""
-        self._opt["conTimeout"]  = 5000  # iperf3 --connect-timeout (ms)
+        self._opt["conTimeout"] = 5000  # iperf3 --connect-timeout (ms)
 
         self.isReverse = False
         self.log("0", "IperfClient ver:%s" % iperfver, 3)
-
 
         self._o["Iperf"] = Iperf(port, iperfver=iperfver)
         self._o["Iperf"].signal_debug.connect(self._on_debug)
@@ -740,9 +754,7 @@ class IperfClient(QObject):
         self._o["iThread"] = QThread()
         self._o["Iperf"].moveToThread(self._o["iThread"])
         self._o["iThread"].started.connect(self._o["Iperf"].task)
-        # print("iThread start")
         self._o["iThread"].start()
-        print("iThread started =============")
 
     def setRowCol(self, Row, Col):
         self._opt["row"] = Row
@@ -824,6 +836,7 @@ class IperfClient(QObject):
             self.sCmd.append('-P')
             self.sCmd.append("%s" % parallel)
             # self._o["iperf"].iParallel = parallel
+            self._o["Iperf"].set_parallel(parallel)
 
         # run in reverse mode (server sends, client receives)
         if reverse == 1:

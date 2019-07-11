@@ -59,7 +59,7 @@ if __name__ == '__main__':
     APP.startTimer(200)
 
     ips = IperfServer()  # default port 5201 for iperf3
-    ips.signal_debug.connect(on_debug)
+    # ips.signal_debug.connect(on_debug)
     ips.signal_result.connect(on_result)
     ips.sig_data.connect(_on_date)
 
