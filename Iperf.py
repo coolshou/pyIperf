@@ -390,7 +390,8 @@ class Iperf(QObject):
 
     def get_resultdetail(self):
         '''get store iperf all result'''
-        return str(self._detail)
+        # return str(self._detail)
+        return self._detail
 
     def set_cmd(self, cmd):
         locker.lock()
@@ -868,7 +869,7 @@ class IperfClient(QObject):
         self.sCmd.append('--connect-timeout')
         self.sCmd.append('%s' % self._opt["conTimeout"])
         # force flush output
-        # self.sCmd.append('--forceflush')
+        self.sCmd.append('--forceflush')
 
         # if sFromat:
 
@@ -922,7 +923,7 @@ class IperfClient(QObject):
     def get_resultdetail(self):
         '''get store iperf all result'''
         rc = self._o["Iperf"].get_resultdetail()
-        self.log("get_resultdetail", "%s" % rc)
+        # self.log("get_resultdetail", "%s" % rc)
         return rc
 
     def isRunning(self):
