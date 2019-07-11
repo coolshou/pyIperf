@@ -665,19 +665,19 @@ class IperfClient(QObject):
     def __init__(self, port=5201, args=None,
                  iRow=0, iCol=0, iperfver=3, parent=None):
         super(IperfClient, self).__init__(parent)
-        self._DEBUG = 2
+        # self._DEBUG = 2
         # super(IperfClient, self).__init__(port,
         #                                   iperfver=iperfver,
         #                                   parent=parent)
-        # index for report
         self._opt = {}
+        # index for report ?
         self._opt["row"] = iRow
         self._opt["col"] = iCol
         self._o = {}  # store obj
         self.server = ""
         self.port = port
         self.sCmd = ""
-        self._opt["conTimeout"]  = 5000  # ms
+        self._opt["conTimeout"]  = 5000  # iperf3 --connect-timeout (ms)
 
         self.isReverse = False
         self.log("0", "IperfClient ver:%s" % iperfver, 3)
@@ -797,9 +797,12 @@ class IperfClient(QObject):
             self.sCmd.append('-f')
             self.sCmd.append(fmtreport)
 
+        # --logfile f: log output to file
         # --connect-timeout ms
         self.sCmd.append('--connect-timeout')
         self.sCmd.append('%s' % self._opt["conTimeout"])
+        # force flush output
+        self.sCmd.append('--forceflush')
 
         # if sFromat:
 
@@ -839,7 +842,7 @@ class IperfClient(QObject):
     def get_packeterrorrate(self):
         '''get store iperf UDP packet error rate (PER) result'''
         rc = self._o["Iperf"].get_packeterrorrate()
-        print("get_packeterrorrate: %s" % rc)
+        self.log("get_packeterrorrate",  "%s" % rc)
         return
 
     def get_result(self):
@@ -853,7 +856,7 @@ class IperfClient(QObject):
     def get_resultdetail(self):
         '''get store iperf all result'''
         rc = self._o["Iperf"].get_resultdetail()
-        print("get_resultdetail: %s" % rc)
+        self.log("get_resultdetail", "%s" % rc)
         return rc
 
     def isRunning(self):
