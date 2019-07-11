@@ -518,6 +518,12 @@ class Iperf(QObject):
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
+        # record
+        # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+        # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+
+        # recore every line
+        self._detail.append(line.strip())
         if ("[" in line) and ("]" in line):
             # this suould be data we care
             if "local" in line:
@@ -528,11 +534,6 @@ class Iperf(QObject):
                 # ignore header line
                 pass
             else:
-                # record
-                # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
-                # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
-
-                self._detail.append(line.strip())  # recore every line
                 # --parallel index
                 # may be "SUM" or num
                 iPall = line[1:4].split()
@@ -541,12 +542,8 @@ class Iperf(QObject):
                 # result data
                 data = line[6:].strip()
 
-                # TODO: progress send line data
                 if "(omitted)" in line:
                     pass
-                # elif "[SUM]" in line:  # When -P 1, there will be no [SUM]
-                #     # print("parser: %s" % (line))
-                #     pass
                 elif "sender" in line:
                     pass
                 elif "receiver" in line:
@@ -555,7 +552,7 @@ class Iperf(QObject):
                     self.signal_result.emit(tID, 0, data)  # TODO:
                     if self._parallel > 1:
                         if "SUM" == iPall:
-                            #only procress data when --parallel > 1
+                            # only procress data when --parallel > 1
                             pass
                         else:
                             return
@@ -574,6 +571,7 @@ class Iperf(QObject):
                         print("wrong format:%s" % b)
                 else:
                     # print("%s:%s" % (iPall, data))
+                    # send line data during iperf running
                     self.sig_data.emit(tID, iPall, data)
 
         else:
