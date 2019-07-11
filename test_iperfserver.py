@@ -32,6 +32,19 @@ def signal_handler(signal_, frame):
     sys.exit(0)
 
 
+def on_result(tid, iType, msg):
+    print("on_result:(%s) %s => %s" % (tid, iType, msg))
+
+
+def on_debug(tpy, msg):
+    print("on_debug:(%s) %s" % (tpy, msg))
+
+
+def _on_date(tid, ipall, data):
+    '''iperf live data line'''
+    print("[_on_date]%s:%s: %s" % (tid, ipall, data))
+
+
 def check_quit():
     if not ips.isRunning() and not ips2.isRunning():
         APP.quit()
@@ -46,6 +59,10 @@ if __name__ == '__main__':
     APP.startTimer(200)
 
     ips = IperfServer()  # default port 5201 for iperf3
+    ips.signal_debug.connect(on_debug)
+    ips.signal_result.connect(on_result)
+    ips.sig_data.connect(_on_date)
+
     port = ips.get_port()
     # ips2 = IperfServer(port=port+1, bTcp=False)
     # ips = IperfServer(port=60000)

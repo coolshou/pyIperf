@@ -35,6 +35,15 @@ def signal_handler(signal_, frame):
     sys.exit(0)
 
 
+def on_finished(iCode, msg):
+    print("[on_finished]%s: %s" % (iCode, msg))
+
+
+def on_date(tid, ipall, data):
+    '''iperf live data line'''
+    print("[_on_date]%s:%s: %s" % (tid, ipall, data))
+
+
 def on_result(row, col, tid, iType, msg):
     print("on_result: %s,%s : (%s) %s => %s" % (row, col, tid, iType, msg))
 
@@ -45,18 +54,6 @@ def on_debug(tpy, msg):
 
 def on_error(row, col, sType, sMsg):
     print("on_error:(%s, %s) %s: %s" % (row, col, tpy, msg))
-
-# def check_quit():
-#     if ipc:
-#         # print("check_quit")
-#         if ipc.isRunning():
-#             return 0
-#     # if ipc2:
-#     #     if ipc2.isRunning():
-#     #         return 0
-#     print("quit")
-#     # TODO: can not actually quit!! why?
-#     APP.quit()
 
 
 class IperfClientTest(unittest.TestCase):
@@ -85,37 +82,31 @@ class IperfClientTest(unittest.TestCase):
         # 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
         # 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
         # 'fmtreport':'m'}"
-        # UDP
+        # UDP -R
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
     'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-    'parallel':1, 'reverse':1, \
+    'parallel':1, 'reverse':0, \
     'bitrate':4.23, 'unit_bitrate':'M', \
     'windowsize':64, 'omit':2, \
     'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
         port = 5201
-        # ip = '192.168.70.147'
         ipcs = {}
+
         ipc = IperfClient(port, ds)
         port = ipc.get_port()
         print("ipc: %s" % port)
         ipc.signal_result.connect(on_result)
         ipc.signal_debug.connect(on_debug)
         ipc.signal_error.connect(on_error)
-        # ipc.signal_finished.connect(check_quit)
+        ipc.signal_finished.connect(on_finished)
+        ipc.sig_data.connect(on_date)  # why this cause QThread crash!!
         # time.sleep(1)
         ipcs[port] = ipc
-
-        # ipc2 = IperfClient(port+1, ds)
-        # port = ipc2.get_port()
-        # print("ipc2: %s" % port)
-        # ipc2.signal_result.connect(on_result)
-        # ipc2.signal_debug.connect(on_debug)
-        # ipc2.signal_finished.connect(check_quit)
-        # ipcs[port] = ipc2
-
+        # print("start all ipc")
         for key in ipcs:
             ipc = ipcs[key]
+            # print("start ipc: %s" % ipc)
             ipc.start()
             QCoreApplication.processEvents()
 
@@ -126,6 +117,7 @@ class IperfClientTest(unittest.TestCase):
                 if ipc.isRunning():
                     # ip = ipc.get_server_ip()
                     # print("iperf running: %s: %s" % (ip, key))
+                    QCoreApplication.processEvents()
                     continue
                 time.sleep(0.5)
                 QCoreApplication.processEvents()
