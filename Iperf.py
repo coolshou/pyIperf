@@ -531,7 +531,7 @@ class Iperf(QObject):
                 # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
                 # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
 
-                self._detail.append(line)  # recore every line
+                self._detail.append(line.strip())  # recore every line
                 # --parallel index
                 # may be "SUM" or num
                 iPall = line[1:4].split()
