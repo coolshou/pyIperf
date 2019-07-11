@@ -247,7 +247,7 @@ class Iperf(QObject):
     signal_debug = pyqtSignal(str, str)  # class, msg
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, int ,str)
+    sig_data = pyqtSignal(int, str ,str)
 
     default_port = DEFAULT_IPERF3_PORT
 
@@ -522,7 +522,7 @@ class Iperf(QObject):
 
                 if len(iPall) > 0:
                     # print("iPall: %s type(%s)" % (iPall[0], type(iPall[0])))
-                    iPall = int(iPall[0])
+                    iPall = iPall[0]
                 # result data
                 data = line[6:].strip()
 
@@ -608,7 +608,7 @@ class IperfServer(QObject):
     signal_debug = pyqtSignal(str, str)  # class, msg
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, int ,str)
+    sig_data = pyqtSignal(int, str ,str)
 
     def __init__(self, port=DEFAULT_IPERF3_PORT, iperfver=3, parent=None):
         super(IperfServer, self).__init__(parent)
@@ -654,7 +654,7 @@ class IperfServer(QObject):
         self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
                                sMsg))
 
-    @pyqtSlot(int, int, str)
+    @pyqtSlot(int, str, str)
     def _on_date(self, tid, ipall, data):
         '''iperf live data line'''
         # print("[_on_date]%s: %s" % (tid, data))
@@ -704,7 +704,7 @@ class IperfClient(QObject):
     signal_debug = pyqtSignal(str, str)
 
     # thread id, --parallel num, iperf live data output
-    sig_data = pyqtSignal(int, int ,str)
+    sig_data = pyqtSignal(int, str ,str)
 
     def __init__(self, port=5201, args=None,
                  iRow=0, iCol=0, iperfver=3, parent=None):
@@ -753,7 +753,7 @@ class IperfClient(QObject):
         print("No iperf command (%s) %s" % (sType, sMsg))
         self.signal_error.emit(self._opt["row"], self._opt["col"], sType, sMsg)
 
-    @pyqtSlot(int, int, str)
+    @pyqtSlot(int, str, str)
     def _on_date(self, tid, ipall, data):
         '''iperf live data line'''
         # print("[%s]%s: %s" % (self.__class__.__name__, tid, data))
