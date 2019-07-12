@@ -69,25 +69,11 @@ class IperfClientTest(unittest.TestCase):
         # test code
         # self.wl = Wlan()
 
-    def test_get_packeterrorrate(self):
-        '''get UDP packeterrorrate (PER)'''
-        # TCP
-        #  ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-        # 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
-        # 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
-        # 'fmtreport':'m'}"
-        # UDP -R
-        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-    'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-    'parallel':1, 'reverse':0, \
-    'bitrate':4.23, 'unit_bitrate':'M', \
-    'windowsize':64, 'omit':2, \
-    'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
-
+    def run_iperf(self, data):
         port = 5201
         ipcs = {}
 
-        ipc = IperfClient(port, ds)
+        ipc = IperfClient(port, data)
         port = ipc.get_port()
         print("ipc: %s" % port)
         ipc.signal_result.connect(on_result)
@@ -119,12 +105,28 @@ class IperfClientTest(unittest.TestCase):
 
             QCoreApplication.processEvents()
             time.sleep(0.5)
-            # check_quit()
-        # rs = ipc.get_resultdetail()
+        return ipc
+
+    def test_get_packeterrorrate(self):
+        '''get UDP packeterrorrate (PER)'''
+        # TCP
+        #  ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        # 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+        # 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
+        # 'fmtreport':'m'}"
+        # UDP -R
+        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+    'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
+    'parallel':1, 'reverse':0, \
+    'bitrate':4.23, 'unit_bitrate':'M', \
+    'windowsize':64, 'omit':2, \
+    'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
+
+        ipc = self.run_iperf(ds)
         rs = ipc.get_result()
         print("result:%s" % rs)
         rs = ipc.get_packeterrorrate()
-        # print("PER:%s" % rs)
+        print("PER:%s" % rs)
         self.assertNotEqual(rs, None)
 
     def test_get_packeterrorrate_parallel(self):
@@ -142,47 +144,11 @@ class IperfClientTest(unittest.TestCase):
         'windowsize':64, 'omit':2, \
         'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
-        port = 5201
-        ipcs = {}
-
-        ipc = IperfClient(port, ds)
-        port = ipc.get_port()
-        print("ipc: %s" % port)
-        ipc.signal_result.connect(on_result)
-        ipc.signal_debug.connect(on_debug)
-        ipc.signal_error.connect(on_error)
-        ipc.signal_finished.connect(on_finished)
-        ipc.sig_data.connect(on_date)  # why this cause QThread crash!!
-        # time.sleep(1)
-        ipcs[port] = ipc
-        # print("start all ipc")
-        for key in ipcs:
-            ipc = ipcs[key]
-            # print("start ipc: %s" % ipc)
-            ipc.start()
-            QCoreApplication.processEvents()
-
-        wait = True
-        while wait:
-            for key in ipcs:
-                ipc = ipcs[key]
-                if ipc.isRunning():
-                    # ip = ipc.get_server_ip()
-                    # print("iperf running: %s: %s" % (ip, key))
-                    QCoreApplication.processEvents()
-                    continue
-                time.sleep(0.5)
-                QCoreApplication.processEvents()
-                wait = False
-
-            QCoreApplication.processEvents()
-            time.sleep(0.5)
-            # check_quit()
-        # rs = ipc.get_resultdetail()
+        ipc = self.run_iperf(ds)
         rs = ipc.get_result()
         print("result:%s" % rs)
         rs = ipc.get_packeterrorrate()
-        # print("PER:%s" % rs)
+        print("PER:%s" % rs)
         self.assertNotEqual(rs, None)
 
     def test_get_resultdetail(self):
@@ -200,43 +166,7 @@ class IperfClientTest(unittest.TestCase):
         'windowsize':64, 'omit':2, \
         'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
-        port = 5201
-        ipcs = {}
-
-        ipc = IperfClient(port, ds)
-        port = ipc.get_port()
-        print("ipc: %s" % port)
-        ipc.signal_result.connect(on_result)
-        ipc.signal_debug.connect(on_debug)
-        ipc.signal_error.connect(on_error)
-        ipc.signal_finished.connect(on_finished)
-        ipc.sig_data.connect(on_date)  # why this cause QThread crash!!
-        # time.sleep(1)
-        ipcs[port] = ipc
-        # print("start all ipc")
-        for key in ipcs:
-            ipc = ipcs[key]
-            # print("start ipc: %s" % ipc)
-            ipc.start()
-            QCoreApplication.processEvents()
-
-        wait = True
-        while wait:
-            for key in ipcs:
-                ipc = ipcs[key]
-                if ipc.isRunning():
-                    # ip = ipc.get_server_ip()
-                    # print("iperf running: %s: %s" % (ip, key))
-                    QCoreApplication.processEvents()
-                    continue
-                time.sleep(0.5)
-                QCoreApplication.processEvents()
-                wait = False
-
-            QCoreApplication.processEvents()
-            time.sleep(0.5)
-            # check_quit()
-        # rs = ipc.get_resultdetail()
+        ipc = self.run_iperf(ds)
         rs = ipc.get_resultdetail()
         print("result:%s" % type(rs))
 
@@ -249,8 +179,8 @@ class IperfClientTest(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()
-    # suite.addTest(IperfClientTest('test_get_packeterrorrate'))
+    suite.addTest(IperfClientTest('test_get_packeterrorrate'))
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
-    suite.addTest(IperfClientTest('test_get_resultdetail'))
+    # suite.addTest(IperfClientTest('test_get_resultdetail'))
 
     unittest.TextTestRunner(verbosity=2).run(suite)
