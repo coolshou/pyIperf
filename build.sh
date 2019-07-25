@@ -10,6 +10,8 @@ fi
 if [ -e dist/qperf_$ARCH ];then
     rm dist/qperf_$ARCH
 fi
+pyuic5 dlgConfig.ui -o dlgConfig.py
+
 python3 -m PyInstaller qperf.spec
 mv dist/qperf dist/qperf_$ARCH
 
