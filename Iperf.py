@@ -454,6 +454,8 @@ class Iperf(QObject):
                                     self.signal_finished.emit(1,
                                                               "signal_finished!!")
                                     break
+                            # TODO: error control
+                            # eg: iperf3: error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
                     elif platform.system() == 'Windows':
@@ -937,7 +939,7 @@ class IperfClient(QObject):
         '''logging.INFO = 20'''
         # show on stdout
         if self._DEBUG > level:
-            print("IperfClient log: (%s) %s" % (mType, msg))
+            # print("IperfClient log: (%s) %s" % (mType, msg))
             # if mType == '1':
             # self.signal_error.emit(mType, msg)
             # else:
