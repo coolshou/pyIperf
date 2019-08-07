@@ -160,9 +160,9 @@ class MainWindow(QMainWindow):
 
     def __del__(self):
         ''' destructure     '''
-        if self.s.isRunning():
-            self.s.stop()
-        pass
+        if self.s:
+            if self.s.isRunning():
+                self.s.stop()
 
     @pyqtSlot(QRadioButton)
     def setIperfVersion(self, b):
