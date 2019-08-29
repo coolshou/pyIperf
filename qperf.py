@@ -31,7 +31,7 @@ import serial
 import serial.tools.list_ports as list_ports
 # import re
 
-from Iperf import IperfServer, IperfClient, iperfResult
+from Iperf import IperfServer, IperfClient, IperfResult
 from dlgConfig import Ui_Dialog as dlgConfig
 
 
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
             if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or
                 (('receiver' in msg) and (iCol == columnResult.colRx.value))):
                 print("parserReult iType: %s" % iType)
-                rs = iperfResult(iType, msg)
+                rs = IperfResult(iType, msg)
                 self.logToFile("%s %s" % (rs.throughput, rs.throughputUnit))
                 if iType > 1 and rs.idx == 'SUM':
                     self.updateData(iRow, iCol,

@@ -38,13 +38,14 @@ if platform.system() == 'Linux':
 
 
 def kill(proc_pid):
+    '''kill procress id'''
     process = psutil.Process(proc_pid)
     for proc in process.children(recursive=True):
         proc.kill()
     process.kill()
 
 
-class iperfResult():
+class IperfResult():
     '''class to handle iperf throughput output line'''
     # TODO:
     iKb = 1024
@@ -231,7 +232,7 @@ class IperfThread(QThread):
     def run(self):
         self.exec_()
 '''
-locker = QMutex()
+LOCKER = QMutex()
 
 DEFAULT_IPERF3_PORT = 5201
 DEFAULT_IPERF2_PORT = 5001
@@ -304,6 +305,7 @@ class Iperf(QObject):
         self._per = ""
 
     def set_protocal(self, protocal):
+        '''set iperf run protocal: 0: TCP, 1: UDP'''
         if protocal in [0, "0"]:
             self._tcp = IPERFprotocal.get("TCP")
         elif protocal in [1, "1"]:
@@ -312,6 +314,7 @@ class Iperf(QObject):
             print("Unknown protocal:%s" % protocal)
 
     def enqueue_output(self, out, queue):
+        '''store out line by line in queue'''
         for line in iter(out.readline, b''):
             queue.put(line)
         self.log("0", "enqueue_output: %s" % line)
@@ -348,19 +351,21 @@ class Iperf(QObject):
             return retval
 
     def getPID(self):
+        '''get proc's pid '''
         if self.proc:
             return self.proc.pid
         else:
             return -1
 
     def isRunning(self):
+        ''' check is running'''
         self.log("0", "stoped: %s" % self.stoped)
         return not self.stoped
 
     @pyqtSlot()
     def do_stop(self):
         ''' stop the thread  '''
-        locker.lock()
+        LOCKER.lock()
         self.stoped = True
         if platform.system() == 'Linux':
             if self.child:
@@ -369,9 +374,10 @@ class Iperf(QObject):
             if self.child:
                 self.child.terminate()
         self.sCmd.clear()
-        locker.unlock()
+        LOCKER.unlock()
 
     def get_port(self):
+        '''return port'''
         return self.port
 
     def get_packeterrorrate(self):
@@ -394,9 +400,9 @@ class Iperf(QObject):
         return self._detail
 
     def set_cmd(self, cmd):
-        locker.lock()
+        LOCKER.lock()
         self.sCmd = cmd
-        locker.unlock()
+        LOCKER.unlock()
 
     def set_parallel(self, parallel):
         '''set parallel to get correct result'''
@@ -667,7 +673,7 @@ class IperfServer(QObject):
     def _on_debug(self, sType, sMsg):
         # print(" _on_debug (%s) %s" % (sType, sMsg))
         self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
-                               sMsg))
+                                                  sMsg))
 
     @pyqtSlot(int, str, str)
     def _on_date(self, tid, ipall, data):
@@ -776,7 +782,7 @@ class IperfClient(QObject):
     def _on_debug(self, sType, sMsg):
         # print("IperfClient _on_debug (%s) %s" % (sType, sMsg))
         self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
-                               sMsg))
+                                                  sMsg))
 
     @pyqtSlot(int, int, str)
     def _on_result(self, tid, iType, msg):
