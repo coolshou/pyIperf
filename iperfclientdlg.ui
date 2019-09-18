@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>514</width>
+    <width>561</width>
     <height>644</height>
    </rect>
   </property>
@@ -20,7 +20,16 @@
       <string>Options</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
       <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
        <number>3</number>
       </property>
       <property name="bottomMargin">
@@ -29,7 +38,16 @@
       <item>
        <widget class="QWidget" name="widget_6" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
          <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
           <number>3</number>
          </property>
          <property name="bottomMargin">
@@ -38,6 +56,18 @@
          <item>
           <widget class="QWidget" name="widget_16" native="true">
            <layout class="QHBoxLayout" name="horizontalLayout_16">
+            <property name="leftMargin">
+             <number>2</number>
+            </property>
+            <property name="topMargin">
+             <number>2</number>
+            </property>
+            <property name="rightMargin">
+             <number>2</number>
+            </property>
+            <property name="bottomMargin">
+             <number>2</number>
+            </property>
             <item>
              <widget class="QLabel" name="lbPort">
               <property name="text">
@@ -89,7 +119,7 @@
             <item>
              <widget class="QComboBox" name="comboBoxFormat">
               <property name="currentText">
-               <string>m</string>
+               <string>k</string>
               </property>
               <item>
                <property name="text">
@@ -156,16 +186,16 @@
        <widget class="QWidget" name="widget_15" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_15">
          <property name="spacing">
-          <number>6</number>
+          <number>3</number>
          </property>
          <property name="leftMargin">
-          <number>9</number>
+          <number>3</number>
          </property>
          <property name="topMargin">
           <number>3</number>
          </property>
          <property name="rightMargin">
-          <number>9</number>
+          <number>3</number>
          </property>
          <property name="bottomMargin">
           <number>3</number>
@@ -234,16 +264,16 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_18">
       <property name="spacing">
-       <number>2</number>
+       <number>3</number>
       </property>
       <property name="leftMargin">
-       <number>9</number>
+       <number>3</number>
       </property>
       <property name="topMargin">
        <number>3</number>
       </property>
       <property name="rightMargin">
-       <number>9</number>
+       <number>3</number>
       </property>
       <property name="bottomMargin">
        <number>3</number>
@@ -306,9 +336,15 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <property name="spacing">
-       <number>2</number>
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>3</number>
       </property>
       <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
        <number>3</number>
       </property>
       <property name="bottomMargin">
