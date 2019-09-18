@@ -298,7 +298,7 @@ class Iperf(QObject):
         self._parallel = 1  # for report result use
 
         # store result
-        self._result = ""  # store final sum
+        self._result = "0"  # store final sum
         self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
         '''store iperf UDP packet error rate (PER) result'''
@@ -387,7 +387,13 @@ class Iperf(QObject):
     def get_result(self):
         '''get store iperf average result'''
         # print("get_result: %s" % self._result)
-        return str(self._result)
+        rs = ""
+        try:
+            rs = str(self._result)
+        except Exception as e:
+            print("iperf get_result: %s" % e)
+            pass
+        return rs
 
     def get_resultunit(self):
         '''get store iperf average result'''
@@ -418,7 +424,7 @@ class Iperf(QObject):
         # exec by QThread.start()
         # tID = QThread.currentThread()
         tID = QThread.currentThreadId()
-
+        self._result = "0"
         self.stoped = False
         self.exiting = False
         self.log('0', "start task", 4)
@@ -548,7 +554,7 @@ class Iperf(QObject):
                 if type(iPall) == list:
                     iPall = iPall[0]
                 # result data
-                data = line[6:].strip()
+                data = line[5:].strip()
 
                 if "(omitted)" in line:
                     pass
@@ -566,9 +572,14 @@ class Iperf(QObject):
                             return
                     b = data.split()
                     if len(b) >= 7:
-                        # print("FOUND RESULT: %s (%s)" % (b[5], b[6]))
-                        self._result = b[4]
-                        self._resultunit = b[5]
+                        if ("TX-C" in data) or ("RX-C" in data):
+                            self._result = round(float(self._result) +
+                                                 float(b[5]), 2)
+                        else:
+                            self._result = b[5]
+                        self._resultunit = b[6]
+                        print("FOUND RESULT: %s (%s)" % (self._result,
+                                                         self._resultunit))
                         if self._tcp == IPERFprotocal.get("UDP"):
                             # ds = re.findall("\d+", b[10])
                             per = b[9]
@@ -804,6 +815,7 @@ class IperfClient(QObject):
         # sFromat='M', isTCP=True, duration=10, parallel=1,
         # isReverse=False, iBitrate=0, sBitrateUnit='K',
         # iWindowSize=65535, sWindowSizeUnit=''
+        # TODO: parser iperf v2 command
         if args is None:
             self.log("0", "No iperf client options")
             return
@@ -822,6 +834,7 @@ class IperfClient(QObject):
         duration = ds.get("duration")
         parallel = ds.get("parallel")
         reverse = ds.get("reverse")
+        bidir = ds.get("bidir")  # bi-direction
         bitrate = ds.get("bitrate")
         unit_bitrate = ds.get("unit_bitrate")
         windowsize = ds.get("windowsize")
@@ -842,13 +855,13 @@ class IperfClient(QObject):
         if parallel > 1:
             self.sCmd.append('-P')
             self.sCmd.append("%s" % parallel)
-            # self._o["iperf"].iParallel = parallel
             self._o["Iperf"].set_parallel(parallel)
 
         # run in reverse mode (server sends, client receives)
         if reverse == 1:
             self.sCmd.append('-R')
-
+        if bidir == 1:
+            self.sCmd.append('--bidir')
         if bitrate > 0:
             self.sCmd.append('-b')
             self.sCmd.append("%s%s" % (bitrate, unit_bitrate))

@@ -52,8 +52,9 @@ def on_debug(tpy, msg):
     # print("on_debug:(%s) %s" % (tpy, msg))
     pass
 
+
 def on_error(row, col, sType, sMsg):
-    print("on_error:(%s, %s) %s: %s" % (row, col, tpy, msg))
+    print("on_error:(%s, %s) %s: %s" % (row, col, sType, sMsg))
 
 
 class IperfClientTest(unittest.TestCase):
@@ -151,6 +152,18 @@ class IperfClientTest(unittest.TestCase):
         print("PER:%s" % rs)
         self.assertNotEqual(rs, None)
 
+    def test_get_result(self):
+        '''get result'''
+        # TCP
+        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        'server':'192.168.1.1', 'protocal':0, 'duration':10, \
+        'parallel':0, 'reverse':0, 'bidir':1, 'bitrate':0, \
+        'windowsize':-1, 'omit':2, \
+        'fmtreport':'m'}"
+        ipc = self.run_iperf(ds)
+        rs = ipc.get_result()
+        print("result:%s %s" % (type(rs), rs))
+
     def test_get_resultdetail(self):
         '''get parallel UDP packeterrorrate (PER)'''
         # TCP
@@ -179,8 +192,8 @@ class IperfClientTest(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestSuite()
-    suite.addTest(IperfClientTest('test_get_packeterrorrate'))
+    # suite.addTest(IperfClientTest('test_get_packeterrorrate'))
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
-
+    suite.addTest(IperfClientTest('test_get_result'))
     unittest.TextTestRunner(verbosity=2).run(suite)
