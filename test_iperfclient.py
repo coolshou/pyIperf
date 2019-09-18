@@ -117,8 +117,8 @@ class IperfClientTest(unittest.TestCase):
         # 'fmtreport':'m'}"
         # UDP -R
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-    'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-    'parallel':1, 'reverse':0, \
+    'server':'192.168.1.1', 'protocal': %s, 'duration':20, \
+    'parallel':1, 'reverse':0, 'bidir':0, \
     'bitrate':4.23, 'unit_bitrate':'M', \
     'windowsize':64, 'omit':2, \
     'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
@@ -139,8 +139,8 @@ class IperfClientTest(unittest.TestCase):
         # 'fmtreport':'m'}"
         # UDP -R
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-        'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-        'parallel':5, 'reverse':0, \
+        'server':'192.168.1.1', 'protocal': %s, 'duration':20, \
+        'parallel':5, 'reverse':0, 'bidir':0, \
         'bitrate':4.23, 'unit_bitrate':'M', \
         'windowsize':64, 'omit':2, \
         'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
@@ -157,12 +157,24 @@ class IperfClientTest(unittest.TestCase):
         # TCP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         'server':'192.168.1.1', 'protocal':0, 'duration':10, \
-        'parallel':0, 'reverse':0, 'bidir':1, 'bitrate':0, \
+        'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
         'windowsize':-1, 'omit':2, \
         'fmtreport':'m'}"
         ipc = self.run_iperf(ds)
         rs = ipc.get_result()
         print("result:%s %s" % (type(rs), rs))
+
+    def test_get_result_bidir(self):
+        '''get result'''
+        # TCP
+        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        'server':'192.168.1.1', 'protocal':0, 'duration':10, \
+        'parallel':1, 'reverse':0, 'bidir':1, 'bitrate':0, \
+        'windowsize':-1, 'omit':2, \
+        'fmtreport':'m'}"
+        ipc = self.run_iperf(ds)
+        rs = ipc.get_result()
+        print("result:%s - %s" % (type(rs), rs))
 
     def test_get_resultdetail(self):
         '''get parallel UDP packeterrorrate (PER)'''
@@ -173,15 +185,15 @@ class IperfClientTest(unittest.TestCase):
         # 'fmtreport':'m'}"
         # UDP -R
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-        'server':'192.168.0.47', 'protocal': %s, 'duration':20, \
-        'parallel':5, 'reverse':0, \
+        'server':'192.168.1.1', 'protocal': %s, 'duration':20, \
+        'parallel':5, 'reverse':0, 'bidir':0, \
         'bitrate':4.23, 'unit_bitrate':'M', \
         'windowsize':64, 'omit':2, \
         'fmtreport':'m'}" % (IPERFprotocal.get("UDP"))
 
         ipc = self.run_iperf(ds)
         rs = ipc.get_resultdetail()
-        print("result:%s" % type(rs))
+        print("result:%s- %s" % (type(rs), rs))
 
     def tearDown(self):
         '''
@@ -195,5 +207,6 @@ if __name__ == '__main__':
     # suite.addTest(IperfClientTest('test_get_packeterrorrate'))
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
-    suite.addTest(IperfClientTest('test_get_result'))
+    # suite.addTest(IperfClientTest('test_get_result'))
+    suite.addTest(IperfClientTest('test_get_result_bidir'))
     unittest.TextTestRunner(verbosity=2).run(suite)

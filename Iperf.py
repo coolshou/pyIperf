@@ -532,9 +532,8 @@ class Iperf(QObject):
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
-        # record
-        # [SUM]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
-        # [  5]   0.00-20.00  sec  7.04 MBytes  2.95 Mbits/sec  24.607 ms  16/5115 (0.17%)  receiver
+        # record parser
+        # TCP/UDP/--bidir
 
         # recore every line
         self._detail.append(line.strip())
@@ -553,42 +552,60 @@ class Iperf(QObject):
                 iPall = line[1:4].split()
                 if type(iPall) == list:
                     iPall = iPall[0]
+                # print("iPall: %s (%s)" % (iPall, type(iPall)))
                 # result data
                 data = line[5:].strip()
 
-                if "(omitted)" in line:
+                if "(omitted)" in data:
                     pass
-                elif "sender" in line:
+                elif "sender" in data:
                     pass
-                elif "receiver" in line:
+                elif "receiver" in data:
                     # real data need to parser
                     self.log(tID, "parser: %s" % (data))
-                    self.signal_result.emit(tID, 0, data)  # TODO:
+                    if "SUM" != iPall:
+                        self.signal_result.emit(tID, int(iPall), data)  # TODO:
                     if self._parallel > 1:
                         if "SUM" == iPall:
                             # only procress data when --parallel > 1
                             pass
                         else:
                             return
-                    b = data.split()
-                    if len(b) >= 7:
-                        if ("TX-C" in data) or ("RX-C" in data):
+                    # ds = re.findall("\d+\.\d+", data)  # float only!
+                    ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
+                    if ("TX-C" in data) or ("RX-C" in data):
+                        try:
                             self._result = round(float(self._result) +
-                                                 float(b[5]), 2)
-                        else:
-                            self._result = b[5]
-                        self._resultunit = b[6]
-                        print("FOUND RESULT: %s (%s)" % (self._result,
-                                                         self._resultunit))
-                        if self._tcp == IPERFprotocal.get("UDP"):
-                            # ds = re.findall("\d+", b[10])
-                            per = b[9]
-                            per = per[1:-2]  # remove ( and %)
-                            # print("Get UDP PER: %s" % per)
-                            self._per = per
+                                                 float(ds[3]), 2)
+                        except Exception as e:
+                            print("iperf avg: ERROR: %s" % e)
+                        # self.sig_data.emit(tID, iPall, "%s" % self._result)
                     else:
-                        print("wrong format:%s" % b)
+                        self._result = ds[3]
+                    if self._tcp == IPERFprotocal.get("UDP"):
+                        # TODO --bidir
+                        self._per = ds[7]
+
+                    # b = data.split()
+                    # if len(b) >= 7:
+                    #     if ("TX-C" in data) or ("RX-C" in data):
+                    #         self._result = round(float(self._result) +
+                    #                              float(b[5]), 2)
+                    #     else:
+                    #         self._result = b[5]
+                    #     self._resultunit = b[6]
+                    #     print("FOUND RESULT: %s (%s)" % (self._result,
+                    #                                      self._resultunit))
+                    #     if self._tcp == IPERFprotocal.get("UDP"):
+                    #         # ds = re.findall("\d+", b[10])
+                    #         per = b[9]
+                    #         per = per[1:-2]  # remove ( and %)
+                    #         # print("Get UDP PER: %s" % per)
+                    #         self._per = per
+                    # else:
+                    #     print("wrong format:%s" % b)
                 else:
+                    # every line of data
                     # print("%s:%s" % (iPall, data))
                     # send line data during iperf running
                     self.sig_data.emit(tID, iPall, data)
@@ -958,8 +975,4 @@ class IperfClient(QObject):
         '''logging.INFO = 20'''
         # show on stdout
         if self._DEBUG > level:
-            # print("IperfClient log: (%s) %s" % (mType, msg))
-            # if mType == '1':
-            # self.signal_error.emit(mType, msg)
-            # else:
             self.signal_debug.emit(self.__class__.__name__, msg)
