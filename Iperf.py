@@ -298,11 +298,13 @@ class Iperf(QObject):
         self._parallel = 1  # for report result use
 
         # store result
-        self._result = "0"  # store final sum
+        # self._result = "0"  # store final sum
+        self._result = {}  # store final in dict format
         self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
         '''store iperf UDP packet error rate (PER) result'''
-        self._per = ""
+        # self._per = ""
+        self._per = {}
 
     def set_protocal(self, protocal):
         '''set iperf run protocal: 0: TCP, 1: UDP'''
@@ -382,18 +384,20 @@ class Iperf(QObject):
 
     def get_packeterrorrate(self):
         '''get store iperf UDP packet error rate (PER) result'''
-        return str(self._per)
+        # return str(self._per)
+        return self._per
 
     def get_result(self):
-        '''get store iperf average result'''
+        '''get store iperf average result in dict'''
         # print("get_result: %s" % self._result)
-        rs = ""
-        try:
-            rs = str(self._result)
-        except Exception as e:
-            print("iperf get_result: %s" % e)
-            pass
-        return rs
+        # rs = ""
+        # try:
+        #     rs = str(self._result)
+        # except Exception as e:
+        #     print("iperf get_result: %s" % e)
+        #     pass
+        # return rs
+        return self._result
 
     def get_resultunit(self):
         '''get store iperf average result'''
@@ -401,7 +405,7 @@ class Iperf(QObject):
         return str(self._resultunit)
 
     def get_resultdetail(self):
-        '''get store iperf all result'''
+        '''get store iperf all result lines'''
         # return str(self._detail)
         return self._detail
 
@@ -424,7 +428,7 @@ class Iperf(QObject):
         # exec by QThread.start()
         # tID = QThread.currentThread()
         tID = QThread.currentThreadId()
-        self._result = "0"
+        self._result = {}
         self.stoped = False
         self.exiting = False
         self.log('0', "start task", 4)
@@ -573,18 +577,20 @@ class Iperf(QObject):
                             return
                     # ds = re.findall("\d+\.\d+", data)  # float only!
                     ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
-                    if ("TX-C" in data) or ("RX-C" in data):
-                        try:
-                            self._result = round(float(self._result) +
-                                                 float(ds[3]), 2)
-                        except Exception as e:
-                            print("iperf avg: ERROR: %s" % e)
-                        # self.sig_data.emit(tID, iPall, "%s" % self._result)
-                    else:
-                        self._result = ds[3]
+                    # if ("TX-C" in data) or ("RX-C" in data):
+                    #     try:
+                    #         # self._result = round(float(self._result) +
+                    #         #                      float(ds[3]), 2)
+
+                    #     except Exception as e:
+                    #         print("iperf avg: ERROR: %s" % e)
+                    #     # self.sig_data.emit(tID, iPall, "%s" % self._result)
+                    # else:
+                    #     self._result = ds[3]
+                    self._result[iPall] = round(float(ds[3]), 2)
                     if self._tcp == IPERFprotocal.get("UDP"):
                         # TODO --bidir
-                        self._per = ds[7]
+                        self._per = round(float(ds[7]), 2)
 
                     # b = data.split()
                     # if len(b) >= 7:
