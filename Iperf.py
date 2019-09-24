@@ -899,6 +899,8 @@ class IperfClient(QObject):
             self.sCmd.append('-w')
             if unit_windowsize not in ["K", "M", "G"]:
                 windowsize = "%sK" % windowsize
+            else:
+                windowsize = "%s%s" % (windowsize, unit_windowsize)
             self.sCmd.append("%s" % windowsize)
 
         if omit > 0:
