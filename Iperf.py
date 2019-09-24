@@ -861,6 +861,7 @@ class IperfClient(QObject):
         bitrate = ds.get("bitrate")
         unit_bitrate = ds.get("unit_bitrate")
         windowsize = ds.get("windowsize")
+        unit_windowsize = ds.get("unit_windowsize")
         fmtreport = ds.get("fmtreport")
         omit = ds.get("omit")
 
@@ -897,6 +898,9 @@ class IperfClient(QObject):
                 windowsize = 425984
             self.sCmd.append('-w')
             self.sCmd.append("%s" % windowsize)
+            if unit_windowsize not in ["K", "M", "G"]:
+                unit_windowsize = "K"
+            self.sCmd.append("%s" % unit_windowsize)
 
         if omit > 0:
             self.sCmd.append('-O')
