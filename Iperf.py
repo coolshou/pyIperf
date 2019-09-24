@@ -897,10 +897,9 @@ class IperfClient(QObject):
                 self.log("0", "Max window size is %s" % 425984)
                 windowsize = 425984
             self.sCmd.append('-w')
-            self.sCmd.append("%s" % windowsize)
             if unit_windowsize not in ["K", "M", "G"]:
-                unit_windowsize = "K"
-            self.sCmd.append("%s" % unit_windowsize)
+                windowsize = "%sK" % windowsize
+            self.sCmd.append("%s" % windowsize)
 
         if omit > 0:
             self.sCmd.append('-O')
