@@ -446,8 +446,11 @@ class Iperf(QObject):
                                                    encoding='utf-8')
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
+                        # TODO: self.child.logfile
                         # while not self.child.eof():
-                        while self.child.isalive():
+                        # while self.child.isalive():
+                        patterns = [pexpect.EOF]
+                        while True:
                             QCoreApplication.processEvents()
                             try:
                                 # non-blocking readline
@@ -474,6 +477,14 @@ class Iperf(QObject):
                             # iperf3: error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
+                            ret = self.child.expect(patterns)
+                            if ret == 0:
+                                break
+                        bfData = self.child.before()
+                        rs = bfData.rstrip()
+                        self._handel_dataline(tID, rs)
+                        QCoreApplication.processEvents()
+
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
