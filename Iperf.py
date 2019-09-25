@@ -477,9 +477,9 @@ class Iperf(QObject):
                             # iperf3: error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
-                            ret = self.child.expect(patterns)
+                            ret = self.child.expect(patterns, async_=True)
                             if ret == 0:
-                                break
+                                 break
                         bfData = self.child.before()
                         rs = bfData.rstrip()
                         self._handel_dataline(tID, rs)
