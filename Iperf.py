@@ -446,7 +446,8 @@ class Iperf(QObject):
                                                    encoding='utf-8')
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        while not self.child.eof():
+                        # while not self.child.eof():
+                        while self.child.isalive():
                             QCoreApplication.processEvents()
                             try:
                                 # non-blocking readline
