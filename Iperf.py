@@ -446,7 +446,6 @@ class Iperf(QObject):
                                                    encoding='utf-8')
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        # while self.child.isalive():
                         while not self.child.eof():
                             QCoreApplication.processEvents()
                             try:
@@ -471,7 +470,7 @@ class Iperf(QObject):
                                                               "signal_finished!!")
                                     break
                             # TODO: error control
-                            # eg: iperf3: error - control socket has closed unexpectedly
+                            # iperf3: error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
                     elif platform.system() == 'Windows':
@@ -549,7 +548,7 @@ class Iperf(QObject):
                 self.log("0", "HEADER: %s" % line, 4)
             elif "Interval" in line:
                 # ignore header line
-                pass
+                time.sleep(0.5)
             else:
                 # --parallel index
                 # may be "SUM" or num
@@ -577,43 +576,12 @@ class Iperf(QObject):
                             return
                     # ds = re.findall("\d+\.\d+", data)  # float only!
                     ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
-                    # if ("TX-C" in data) or ("RX-C" in data):
-                    #     try:
-                    #         # self._result = round(float(self._result) +
-                    #         #                      float(ds[3]), 2)
-
-                    #     except Exception as e:
-                    #         print("iperf avg: ERROR: %s" % e)
-                    #     # self.sig_data.emit(tID, iPall, "%s" % self._result)
-                    # else:
-                    #     self._result = ds[3]
                     self._result[iPall] = round(float(ds[3]), 2)
                     if self._tcp == IPERFprotocal.get("UDP"):
                         # TODO --bidir
                         self._per = round(float(ds[7]), 2)
-
-                    # b = data.split()
-                    # if len(b) >= 7:
-                    #     if ("TX-C" in data) or ("RX-C" in data):
-                    #         self._result = round(float(self._result) +
-                    #                              float(b[5]), 2)
-                    #     else:
-                    #         self._result = b[5]
-                    #     self._resultunit = b[6]
-                    #     print("FOUND RESULT: %s (%s)" % (self._result,
-                    #                                      self._resultunit))
-                    #     if self._tcp == IPERFprotocal.get("UDP"):
-                    #         # ds = re.findall("\d+", b[10])
-                    #         per = b[9]
-                    #         per = per[1:-2]  # remove ( and %)
-                    #         # print("Get UDP PER: %s" % per)
-                    #         self._per = per
-                    # else:
-                    #     print("wrong format:%s" % b)
                 else:
                     # every line of data
-                    # print("%s:%s" % (iPall, data))
-                    # send line data during iperf running
                     self.sig_data.emit(tID, iPall, data)
 
         else:
@@ -892,7 +860,30 @@ class IperfClient(QObject):
         #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
         if windowsize > 0:
-            # Linux Max = 425984
+            # https://segmentfault.com/a/1190000000473365
+            # Linux Max = 425984 = 212992 * 2
+            # cat /proc/sys/net/core/rmem_max
+            # cat /proc/sys/net/core/rmem_default
+            # cat /proc/sys/net/core/wmem_max
+            # cat /proc/sys/net/core/wmem_default
+            # cat /proc/sys/net/ipv4/tcp_window_scaling
+            # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
+            # #read
+            # sysctl -w net.core.rmem_max=N
+            # sysctl -w net.core.rmem_default=N
+
+            # #write
+            # sysctl -w net.core.wmem_max=N
+            # sysctl -w net.core.wmem_default=N
+            # #apply swtting
+            #  sysctl -p
+            # FIX setting
+            # /etc/sysctl.conf
+            # net.core.rmem_default=262144
+            # net.core.wmem_default=262144
+            # net.core.rmem_max=262144
+            # net.core.wmem_max=262144
+
             if windowsize > 425984:
                 self.log("0", "Max window size is %s" % 425984)
                 windowsize = 425984
