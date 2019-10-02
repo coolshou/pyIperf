@@ -49,8 +49,7 @@ def on_result(row, col, tid, iType, msg):
 
 
 def on_debug(tpy, msg):
-    # print("on_debug:(%s) %s" % (tpy, msg))
-    pass
+    print("on_debug:(%s) %s" % (tpy, msg))
 
 
 def on_error(row, col, sType, sMsg):
@@ -70,11 +69,11 @@ class IperfClientTest(unittest.TestCase):
         # test code
         # self.wl = Wlan()
 
-    def run_iperf(self, data):
-        port = 5201
+    def run_iperf(self, data, port=5201, iperfver=3):
+        # port = 5201
         ipcs = {}
-
-        ipc = IperfClient(port, data)
+        print("port: %s" % port)
+        ipc = IperfClient(port, data, iperfver=iperfver)
         port = ipc.get_port()
         print("ipc: %s" % port)
         ipc.signal_result.connect(on_result)
@@ -152,6 +151,18 @@ class IperfClientTest(unittest.TestCase):
         print("PER:%s" % rs)
         self.assertNotEqual(rs, None)
 
+    def test_get_result2(self):
+        '''get iperf v2 result'''
+        # TCP
+        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        'server':'192.168.70.147', 'protocal':0, 'duration':10, \
+        'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
+        'windowsize':-1, 'omit':2, \
+        'fmtreport':'m', 'version':2}"
+        ipc = self.run_iperf(ds, 5001, 2)
+        rs = ipc.get_result()
+        print("result:%s %s" % (type(rs), rs))
+
     def test_get_result(self):
         '''get result'''
         # TCP
@@ -159,7 +170,7 @@ class IperfClientTest(unittest.TestCase):
         'server':'192.168.1.1', 'protocal':0, 'duration':10, \
         'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
         'windowsize':-1, 'omit':2, \
-        'fmtreport':'m'}"
+        'fmtreport':'m', 'version':3}"
         ipc = self.run_iperf(ds)
         rs = ipc.get_result()
         print("result:%s %s" % (type(rs), rs))
@@ -208,5 +219,6 @@ if __name__ == '__main__':
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
     # suite.addTest(IperfClientTest('test_get_result'))
-    suite.addTest(IperfClientTest('test_get_result_bidir'))
+    suite.addTest(IperfClientTest('test_get_result2'))
+    # suite.addTest(IperfClientTest('test_get_result_bidir'))
     unittest.TextTestRunner(verbosity=2).run(suite)

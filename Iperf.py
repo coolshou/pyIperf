@@ -753,6 +753,7 @@ class IperfClient(QObject):
         # index for report ?
         self._opt["row"] = iRow
         self._opt["col"] = iCol
+        self._opt["version"] = iperfver
         self._o = {}  # store obj
         self.server = ""
         self.port = port
@@ -760,9 +761,9 @@ class IperfClient(QObject):
         self._opt["conTimeout"] = 5000  # iperf3 --connect-timeout (ms)
 
         self.isReverse = False
-        self.log("0", "IperfClient ver:%s" % iperfver, 3)
+        self.log("0", "IperfClient ver:%s" % self._opt["version"], 3)
 
-        self._o["Iperf"] = Iperf(port, iperfver=iperfver)
+        self._o["Iperf"] = Iperf(port, iperfver=self._opt["version"])
         self._o["Iperf"].signal_debug.connect(self._on_debug)
         self._o["Iperf"].signal_error.connect(self.error)
         self._o["Iperf"].signal_result.connect(self._on_result)
@@ -863,9 +864,14 @@ class IperfClient(QObject):
 
         # run in reverse mode (server sends, client receives)
         if reverse == 1:
+            # iperf v2.0.12 Linux not support this
             self.sCmd.append('-R')
         if bidir == 1:
-            self.sCmd.append('--bidir')
+            if self._opt["version"] == 3:
+                self.sCmd.append('--bidir')
+            else:
+                self.sCmd.append('-d')
+
         if bitrate > 0:
             self.sCmd.append('-b')
             self.sCmd.append("%s%s" % (bitrate, unit_bitrate))
@@ -907,19 +913,21 @@ class IperfClient(QObject):
             self.sCmd.append("%s" % windowsize)
 
         if omit > 0:
-            self.sCmd.append('-O')
-            self.sCmd.append("%s" % omit)
+            if self._opt["version"] == 3:
+                self.sCmd.append('-O')
+                self.sCmd.append("%s" % omit)
 
         if fmtreport:
             self.sCmd.append('-f')
             self.sCmd.append(fmtreport)
 
         # --logfile f: log output to file
-        # --connect-timeout ms
-        self.sCmd.append('--connect-timeout')
-        self.sCmd.append('%s' % self._opt["conTimeout"])
-        # force flush output
-        self.sCmd.append('--forceflush')
+        if self._opt["version"] == 3:
+            # --connect-timeout ms
+            self.sCmd.append('--connect-timeout')
+            self.sCmd.append('%s' % self._opt["conTimeout"])
+            # force flush output
+            self.sCmd.append('--forceflush')
 
         # if sFromat:
 
