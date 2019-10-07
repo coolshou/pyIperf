@@ -155,13 +155,32 @@ class IperfClientTest(unittest.TestCase):
         '''get iperf v2 result'''
         # TCP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-        'server':'192.168.70.147', 'protocal':0, 'duration':10, \
-        'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
+        'server':'192.168.1.1', 'protocal': %s, 'duration':5, \
+        'parallel':0, 'reverse':0, 'bidir':1, 'bitrate':0, \
         'windowsize':-1, 'omit':2, \
-        'fmtreport':'m', 'version':2}"
+        'fmtreport':'m', 'version':2}" % (IPERFprotocal.get("TCP"))
         ipc = self.run_iperf(ds, 5001, 2)
         rs = ipc.get_result()
         print("result:%s %s" % (type(rs), rs))
+
+    def test_get_resultdetail2(self):
+        '''get parallel UDP packeterrorrate (PER)'''
+        # TCP
+        #  ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        # 'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+        # 'parallel':5, 'reverse':1, 'bitrate':0, 'windowsize':-1, 'omit':2, \
+        # 'fmtreport':'m'}"
+        # UDP -R
+        ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
+        'server':'192.168.1.1', 'protocal': %s, 'duration':5, \
+        'parallel':5, 'reverse':0, 'bidir':0, 'tradeoff':1, \
+        'bitrate':0, 'unit_bitrate':'M', \
+        'windowsize':0, 'omit':2, \
+        'fmtreport':'m', 'version':2}" % (IPERFprotocal.get("TCP"))
+
+        ipc = self.run_iperf(ds, 5001, 2)
+        rs = ipc.get_resultdetail()
+        print("result:%s- %s" % (type(rs), rs))
 
     def test_get_result(self):
         '''get result'''
@@ -219,6 +238,7 @@ if __name__ == '__main__':
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
     # suite.addTest(IperfClientTest('test_get_result'))
-    suite.addTest(IperfClientTest('test_get_result2'))
+    # suite.addTest(IperfClientTest('test_get_result2'))
+    suite.addTest(IperfClientTest('test_get_resultdetail2'))
     # suite.addTest(IperfClientTest('test_get_result_bidir'))
     unittest.TextTestRunner(verbosity=2).run(suite)

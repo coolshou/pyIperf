@@ -123,27 +123,6 @@ class IperfResult():
 
                     self.throughput = nrs[4].strip()
                     self.throughputUnit = nrs[5].strip()
-
-                    '''
-                    rs = result.strip().split(' ')
-                    #nrs = [x for x in rs if x] # remove empty string (slow?)
-                    nrs =list(filter(None, rs)) # remove empty string
-                    self.idx = nrs[1][0:1].strip()
-                    #nrs = rs[1].split('  ')
-                    self.measureTimeStart = nrs[2].split('-')[0]
-                    self.measureTimeEnd = nrs[2].split('-')[1]
-
-                    self.measureTimeUnit = nrs[3].strip()
-
-                    #v, u =nrs[2].split(" ")
-                    self.totalSend = nrs[4].strip()
-                    self.totalSendUnit = nrs[5].strip()
-
-                    #v, u =nrs[3].split(" ")
-                    self.throughput = nrs[6].strip()
-                    self.throughputUnit = nrs[7].strip()
-                    '''
-
                 elif ('ID') in result:
                     print("This is header: %s" % result)
                     return None
@@ -270,7 +249,8 @@ class Iperf(QObject):
             arch = platform.machine()
 
         # print("iperf: %s" % iperfver)
-        if iperfver == 3:
+        self.iperfver = iperfver
+        if self.iperfver == 3:
             iperfname = "iperf3"
         else:
             iperfname = "iperf"
@@ -296,7 +276,10 @@ class Iperf(QObject):
         self.sCmd = []
 
         self._parallel = 1  # for report result use
-
+        self._duration = 0  # -t N sec
+        # iperf2 -r, --tradeoff Do a bidirectional test individually
+        self._tradeoff = False
+        self._tradeoffCount = 0
         # store result
         # self._result = "0"  # store final sum
         self._result = {}  # store final in dict format
@@ -332,7 +315,7 @@ class Iperf(QObject):
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
         except:
-            self.traceback()
+            self.traceback("execCmd")
             return None
 
         return self.proc
@@ -389,14 +372,6 @@ class Iperf(QObject):
 
     def get_result(self):
         '''get store iperf average result in dict'''
-        # print("get_result: %s" % self._result)
-        # rs = ""
-        # try:
-        #     rs = str(self._result)
-        # except Exception as e:
-        #     print("iperf get_result: %s" % e)
-        #     pass
-        # return rs
         return self._result
 
     def get_resultunit(self):
@@ -406,7 +381,6 @@ class Iperf(QObject):
 
     def get_resultdetail(self):
         '''get store iperf all result lines'''
-        # return str(self._detail)
         return self._detail
 
     def set_cmd(self, cmd):
@@ -420,6 +394,17 @@ class Iperf(QObject):
             parallel = 1
         self._parallel = parallel
 
+    def set_duration(self, duration):
+        if duration <= 0:
+            duration = 1
+        self._duration = duration
+
+    def set_tradeoff(self, tradeoff):
+        if tradeoff:
+            self._tradeoff = True
+        else:
+            self._tradeoff = False
+
     @pyqtSlot()
     def task(self):
         # pexpect way to run program, !!!!not work on windows!!!!
@@ -427,9 +412,10 @@ class Iperf(QObject):
         # thread environment has been set up.
         # exec by QThread.start()
         # tID = QThread.currentThread()
-        tID = QThread.currentThreadId()
+        tID = '%s' % int(QThread.currentThreadId())
         self._result = {}
         self.stoped = False
+        self._tradeoffCount = 0
         self.exiting = False
         self.log('0', "start task", 4)
         self.child = None
@@ -474,13 +460,15 @@ class Iperf(QObject):
                                                               "signal_finished!!")
                                     break
                             # TODO: error control
-                            # iperf3: error - control socket has closed unexpectedly
+                            # error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
                             ret = self.child.expect(patterns, async_=True)
                             if ret == 0:
-                                 break
-                        bfData = self.child.before()
+                                break
+                        # print("before:%s" % type(self.child.before))
+                        bfData = self.child.before
+                        # print("bfData:%s" % bfData)
                         rs = bfData.rstrip()
                         self._handel_dataline(tID, rs)
                         QCoreApplication.processEvents()
@@ -505,12 +493,31 @@ class Iperf(QObject):
 
                         # following will block
                         # do task, wait procress finish
+                        # while True:
+                        #     output = self.child.stdout.readline()
+                        #     if output == '':
+                        #         rc = self.child.poll()
+                        #         if rc is not None:
+                        #             self.signal_finished.emit(0,
+                        #                                       "program exit(%s)" % rc)
+                        #             break
+                        #     if output:
+                        #         self._handel_dataline(tID, output)
+                        #     if self.stoped:
+                        #         self.signal_finished.emit(1, "set stop!!")
+                        #         break
+                        # rc = self.child.poll()
                         for line in iter(self.child.stdout.readline, b''):
                             QCoreApplication.processEvents()
                             rs = line.rstrip().decode("utf-8")
                             if rs:
-                                #output result
+                                # output result
                                 self._handel_dataline(tID, rs)
+                            else:
+                                rc = self.child.poll()
+                                if rc is not None:
+                                    self.signal_finished.emit(0,
+                                                              "program exit(%s)" % rc)
                             if self.stoped:
                                 self.signal_finished.emit(1, "set stop!!")
                                 break
@@ -527,8 +534,8 @@ class Iperf(QObject):
                         break
                     self.log('0', "wait for command!!")
                     continue
-            except:
-                self.traceback()
+            except Exception:
+                self.traceback("task")
                 # raise
             finally:
                 self.log('0', "proc end!!", 4)
@@ -547,10 +554,8 @@ class Iperf(QObject):
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
-        # record parser
-        # TCP/UDP/--bidir
-
         # recore every line
+        curDirection = "Tx"
         self._detail.append(line.strip())
         if ("[" in line) and ("]" in line):
             # this suould be data we care
@@ -564,41 +569,111 @@ class Iperf(QObject):
             else:
                 # --parallel index
                 # may be "SUM" or num
-                iPall = line[1:4].split()
-                if type(iPall) == list:
-                    iPall = iPall[0]
+                iPalls = line[1:4].split()
+                if type(iPalls) == list:
+                    iPall = iPalls[0]
                 # print("iPall: %s (%s)" % (iPall, type(iPall)))
+
                 # result data
                 data = line[5:].strip()
-
-                if "(omitted)" in data:
-                    pass
-                elif "sender" in data:
-                    pass
-                elif "receiver" in data:
-                    # real data need to parser
-                    self.log(tID, "parser: %s" % (data))
-                    if "SUM" != iPall:
-                        self.signal_result.emit(tID, int(iPall), data)  # TODO:
-                    if self._parallel > 1:
-                        if "SUM" == iPall:
-                            # only procress data when --parallel > 1
-                            pass
+                if self.iperfver == 2:
+                    # iperf2: determine Tx or Rx
+                    if "port 5001" in data:
+                        idx = data.index("prot 5001")
+                        if idx > 50:
+                            # should be Tx
+                            curDirection = "Tx"
                         else:
-                            return
-                    # ds = re.findall("\d+\.\d+", data)  # float only!
-                    ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
-                    self._result[iPall] = round(float(ds[3]), 2)
-                    if self._tcp == IPERFprotocal.get("UDP"):
-                        # TODO --bidir
-                        self._per = round(float(ds[7]), 2)
-                else:
-                    # every line of data
-                    self.sig_data.emit(tID, iPall, data)
+                            # should be Rx
+                            curDirection = "Rx"
 
+                data = "%s %s" % (curDirection, data)
+                if "SUM" != iPall:
+                    # just notice result when iperf is running for later User
+                    # eg: throughput chart
+                    self.signal_result.emit(tID, int(iPall), data)
+                if self._parallel > 1:
+                    # TODO: handle each pair of data
+                    if "SUM" == iPall:
+                        # only procress data when --parallel > 1
+                        pass
+                    else:
+                        return
+
+                if self.iperfver == 3:
+                    self._parser_dataline3(iPall, tID, data)
+                elif self.iperfver == 2:
+                    self._parser_dataline2(iPall, tID, data)
+                else:
+                    self.log("TODO(iperf v%s)line: %s" % (self.iperfver, line))
+        elif ("failed" in line) or ("error" in line):
+            # something wrong!
+            self.log(tID, "error handle: %s" % line)
+            self.do_stop()
+            pass
         else:
             # print("IGNORE: %s" % (line))
             pass
+
+    def _parser_dataline2(self, iPall, tID, data):
+        '''parser iperf v2 throughput'''
+        # TCP
+        #  99.0-100.0 sec  7.52 GBytes  64.6 Gbits/sec
+        #   0.0-100.0 sec   839 GBytes  72.0 Gbits/sec
+        # UDP
+        #  0.0-100.0 sec  12.5 MBytes  1.05 Mbits/sec
+        # ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int with sign
+        # self.log(tID, "_parser_dataline2: %s" % (data))
+        ds = re.findall(r"\d*\.\d+|\d+", data)  # float & int
+
+        if len(ds) >= 4:
+            self._result[iPall] = round(float(ds[3]), 2)
+            try:
+                startT = float(ds[0])
+                endT = float(ds[1])
+            except ValueError as err:
+                self.log(tID, "_parser_dataline2 ERROR: %s" % err)
+                return -1
+            if (int(startT) == 0) and (self._duration == int(endT)):
+                # final result
+                if self._tradeoff:
+                    if "Tx" in data:
+                        # idx = data.index("Tx")
+                        iPall = "%s%s" % (iPall, "Tx")
+                    if "Rx" in data:
+                        # idx = data.index("Rx")
+                        iPall = "%s%s" % (iPall, "Rx")
+                    #
+                self._result[iPall] = round(float(ds[2]), 2)
+                self.log(tID, "_result[%s]:%s" % (iPall, self._result[iPall]))
+                time.sleep(3)
+                if self._tradeoff:
+                    self._tradeoffCount = self._tradeoffCount+1
+                    if self._tradeoffCount >= 2:
+                        self.do_stop()
+                else:
+                    self.do_stop()
+        else:
+            self.log(tID, "unknown format:%s" % data)
+            self.sig_data.emit(tID, iPall, data)
+
+    def _parser_dataline3(self, iPall, tID, data):
+        '''parser iperf v3 throughput'''
+        self.log(tID, "_parser_dataline3: %s" % (data))
+        if "(omitted)" in data:
+            pass
+        elif "sender" in data:
+            pass
+        elif "receiver" in data:
+            # ds = re.findall("\d+\.\d+", data)  # float only!
+            ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
+            self._result[iPall] = round(float(ds[3]), 2)
+            if self._tcp == IPERFprotocal.get("UDP"):
+                # TODO --bidir
+                self._per = round(float(ds[7]), 2)
+        else:
+            # every line of data
+            self.sig_data.emit(tID, iPall, data)
 
     def kill_proc(self, proc):
         try:
@@ -612,7 +687,7 @@ class Iperf(QObject):
                 proc.terminate()
 
         except Exception:
-            self.traceback()
+            self.traceback("kill_proc")
             pass
 
     # def log(self, mType, msg, level=logging.INFO):
@@ -629,8 +704,9 @@ class Iperf(QObject):
         # set in the traceback object.
         lineno = tb.tb_lineno
         self.signal_debug.emit(self.__class__.__name__,
-                               "%s - %s - Line: %s" % (exc_type,
-                                                       exc_obj, lineno))
+                               "%s - %s - Line: %s (%s)" % (exc_type,
+                                                            exc_obj, lineno,
+                                                            err))
 
 
 # class IperfServer(Iperf):
@@ -796,8 +872,8 @@ class IperfClient(QObject):
     @pyqtSlot(str, str)
     def _on_debug(self, sType, sMsg):
         # print("IperfClient _on_debug (%s) %s" % (sType, sMsg))
-        self.signal_debug.emit(sType, "[%s]%s" % (self.__class__.__name__,
-                                                  sMsg))
+        self.signal_debug.emit(sType, "DEBUG[%s]%s" % (self.__class__.__name__,
+                                                       sMsg))
 
     @pyqtSlot(int, int, str)
     def _on_result(self, tid, iType, msg):
@@ -839,6 +915,7 @@ class IperfClient(QObject):
         parallel = ds.get("parallel")
         reverse = ds.get("reverse")
         bidir = ds.get("bidir")  # bi-direction
+        tradeoff = ds.get("tradeoff", 0)
         bitrate = ds.get("bitrate")
         unit_bitrate = ds.get("unit_bitrate")
         windowsize = ds.get("windowsize")
@@ -856,6 +933,7 @@ class IperfClient(QObject):
         if duration > 0:
             self.sCmd.append('-t')
             self.sCmd.append("%s" % duration)
+            self._o["Iperf"].set_duration(duration)
 
         if parallel > 1:
             self.sCmd.append('-P')
@@ -866,11 +944,16 @@ class IperfClient(QObject):
         if reverse == 1:
             # iperf v2.0.12 Linux not support this
             self.sCmd.append('-R')
-        if bidir == 1:
-            if self._opt["version"] == 3:
-                self.sCmd.append('--bidir')
-            else:
-                self.sCmd.append('-d')
+        if tradeoff == 1:
+            # this will cause iperf2.0.5 server terminal when finish test!!
+            self.sCmd.append('--tradeoff')  # --tradeoff
+            self._o["Iperf"].set_tradeoff(tradeoff)
+        else:
+            if bidir == 1:
+                if self._opt["version"] == 3:
+                    self.sCmd.append('--bidir')
+                else:
+                    self.sCmd.append('-d')  # --dualtest
 
         if bitrate > 0:
             self.sCmd.append('-b')
