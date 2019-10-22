@@ -433,10 +433,10 @@ class Iperf(QObject):
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
                         # TODO: self.child.logfile
-                        # while not self.child.eof():
+                        while not self.child.eof():
                         # while self.child.isalive():
-                        patterns = [pexpect.EOF]
-                        while True:
+                        # patterns = [pexpect.EOF]
+                        # while True:
                             QCoreApplication.processEvents()
                             try:
                                 # non-blocking readline
@@ -463,9 +463,9 @@ class Iperf(QObject):
                             # error - control socket has closed unexpectedly
                             except pexpect.TIMEOUT:
                                 pass
-                            ret = self.child.expect(patterns, async_=True)
-                            if ret == 0:
-                                break
+                            # ret = self.child.expect(patterns, async_=True)
+                            # if ret == 0:
+                            #     break
                         # print("before:%s" % type(self.child.before))
                         bfData = self.child.before
                         # print("bfData:%s" % bfData)
