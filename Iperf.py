@@ -433,10 +433,11 @@ class Iperf(QObject):
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
                         # TODO: self.child.logfile
-                        # while not self.child.eof():
+                        # can not flush stdout ?
+                        while not self.child.eof():
                         # while self.child.isalive():
-                        patterns = [pexpect.EOF]
-                        while True:
+                        # patterns = [pexpect.EOF]
+                        # while True:
                             QCoreApplication.processEvents()
                             # try:
                             # non-blocking readline
@@ -463,9 +464,14 @@ class Iperf(QObject):
                             # error - control socket has closed unexpectedly
                             # except pexpect.TIMEOUT:
                             #    pass
-                            ret = self.child.expect(patterns, async_=True)
-                            if ret == 0:
-                                break
+                            time.sleep(0.5)
+                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                            # return  asyncio coroutine
+                            # ret = self.child.expect(patterns, async_=True)
+                            # self.signal_debug.emit("1", "ret: %s" % (ret))
+                            # if ret == 0:  # wrong use for async_=True
+                                # break
+                            
                         # print("before:%s" % type(self.child.before))
                         bfData = self.child.before
                         # print("bfData:%s" % bfData)
@@ -696,7 +702,7 @@ class Iperf(QObject):
         if self._DEBUG > level:
             # print("Iperf log: (%s) %s" % (mType, msg))
             msg = "(%s) %s" % (mType, msg)
-            self.signal_debug.emit(self.__class__.__name__, msg)
+            # self.signal_debug.emit(self.__class__.__name__, msg)
 
     def traceback(self, err=None):
         exc_type, exc_obj, tb = sys.exc_info()
