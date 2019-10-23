@@ -444,8 +444,9 @@ class Iperf(QObject):
                             line = self.child.readline()
                             # print("line: %s" % line)
                             if len(line) == 0:
-                                time.sleep(0.5)
-                                QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                # time.sleep(0.5)
+                                # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                pass
                             else:
                                 rs = line.rstrip()
                                 if rs:
@@ -453,7 +454,7 @@ class Iperf(QObject):
                                         for val in rs:
                                             # handle line by line
                                             self._handel_dataline(tID, val)
-                                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                            # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                                     else:
                                         self._handel_dataline(tID, rs)
                             if self.stoped:
@@ -464,7 +465,7 @@ class Iperf(QObject):
                             # error - control socket has closed unexpectedly
                             # except pexpect.TIMEOUT:
                             #    pass
-                            time.sleep(0.5)
+                            # time.sleep(0.5)
                             QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                             # return  asyncio coroutine
                             # ret = self.child.expect(patterns, async_=True)
