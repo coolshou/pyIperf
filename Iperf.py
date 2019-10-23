@@ -438,7 +438,7 @@ class Iperf(QObject):
                         # while self.child.isalive():
                         # patterns = [pexpect.EOF]
                         # while True:
-                            QCoreApplication.processEvents()
+                            # QCoreApplication.processEvents()
                             # try:
                             # non-blocking readline
                             line = self.child.readline()
@@ -466,7 +466,7 @@ class Iperf(QObject):
                             # except pexpect.TIMEOUT:
                             #    pass
                             # time.sleep(0.5)
-                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                            # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                             # return  asyncio coroutine
                             # ret = self.child.expect(patterns, async_=True)
                             # self.signal_debug.emit("1", "ret: %s" % (ret))
