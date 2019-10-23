@@ -433,39 +433,39 @@ class Iperf(QObject):
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
                         # TODO: self.child.logfile
-                        while not self.child.eof():
+                        # while not self.child.eof():
                         # while self.child.isalive():
-                        # patterns = [pexpect.EOF]
-                        # while True:
+                        patterns = [pexpect.EOF]
+                        while True:
                             QCoreApplication.processEvents()
-                            try:
-                                # non-blocking readline
-                                line = self.child.readline()
-                                # print("line: %s" % line)
-                                if len(line) == 0:
-                                    time.sleep(0.5)
-                                    QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-                                else:
-                                    rs = line.rstrip()
-                                    if rs:
-                                        if type(rs) == list:
-                                            for val in rs:
-                                                # handle line by line
-                                                self._handel_dataline(tID, val)
-                                                QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-                                        else:
-                                            self._handel_dataline(tID, rs)
-                                if self.stoped:
-                                    self.signal_finished.emit(1,
-                                                              "signal_finished!!")
-                                    break
+                            # try:
+                            # non-blocking readline
+                            line = self.child.readline()
+                            # print("line: %s" % line)
+                            if len(line) == 0:
+                                time.sleep(0.5)
+                                QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                            else:
+                                rs = line.rstrip()
+                                if rs:
+                                    if type(rs) == list:
+                                        for val in rs:
+                                            # handle line by line
+                                            self._handel_dataline(tID, val)
+                                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                    else:
+                                        self._handel_dataline(tID, rs)
+                            if self.stoped:
+                                self.signal_finished.emit(1,
+                                                          "signal_finished!!")
+                                break
                             # TODO: error control
                             # error - control socket has closed unexpectedly
-                            except pexpect.TIMEOUT:
-                                pass
-                            # ret = self.child.expect(patterns, async_=True)
-                            # if ret == 0:
-                            #     break
+                            # except pexpect.TIMEOUT:
+                            #    pass
+                            ret = self.child.expect(patterns, async_=True)
+                            if ret == 0:
+                                break
                         # print("before:%s" % type(self.child.before))
                         bfData = self.child.before
                         # print("bfData:%s" % bfData)
@@ -534,8 +534,8 @@ class Iperf(QObject):
                         break
                     self.log('0', "wait for command!!")
                     continue
-            except Exception:
-                self.traceback("task")
+            except Exception as err:
+                self.traceback("task:%s" % err)
                 # raise
             finally:
                 self.log('0', "proc end!!", 4)
