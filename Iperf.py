@@ -430,45 +430,46 @@ class Iperf(QObject):
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = pexpect.spawn(" ".join(self.sCmd),
                                                    encoding='utf-8')
-                        self.child.logfile_read = sys.stdout
-                        while True:
-                            try:
-                                self.c.expect('\n')
-                                # print(child.after)
-                                self._handel_dataline(tID, self.child.after)
-                            except pexpect.EOF:
-                                break 
+                        # following not work!!
+                        # self.child.logfile_read = sys.stdout
+                        # while True:
+                        #     try:
+                        #         self.c.expect('\n')
+                        #         # print(child.after)
+                        #         self._handel_dataline(tID, self.child.after)
+                        #     except pexpect.EOF:
+                        #         break 
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
                         # TODO: self.child.logfile
                         # can not flush stdout ?
-                        # while not self.child.eof():
+                        while not self.child.eof():
                         # # while self.child.isalive():
                         # # patterns = [pexpect.EOF]
                         # # while True:
-                        #     # QCoreApplication.processEvents()
-                        #     # try:
-                        #     # non-blocking readline
-                        #     line = self.child.readline()
-                        #     # print("line: %s" % line)
-                        #     if len(line) == 0:
-                        #         # time.sleep(0.5)
-                        #         # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-                        #         pass
-                        #     else:
-                        #         rs = line.rstrip()
-                        #         if rs:
-                        #             if type(rs) == list:
-                        #                 for val in rs:
-                        #                     # handle line by line
-                        #                     self._handel_dataline(tID, val)
-                        #                     # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-                        #             else:
-                        #                 self._handel_dataline(tID, rs)
-                        #     if self.stoped:
-                        #         self.signal_finished.emit(1,
-                        #                                   "signal_finished!!")
-                        #         break
+                            # QCoreApplication.processEvents()
+                            # try:
+                            # non-blocking readline
+                            line = self.child.readline()
+                            # print("line: %s" % line)
+                            if len(line) == 0:
+                                # time.sleep(0.5)
+                                # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                pass
+                            else:
+                                rs = line.rstrip()
+                                if rs:
+                                    if type(rs) == list:
+                                        for val in rs:
+                                            # handle line by line
+                                            self._handel_dataline(tID, val)
+                                            # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                                    else:
+                                        self._handel_dataline(tID, rs)
+                            if self.stoped:
+                                self.signal_finished.emit(1,
+                                                          "signal_finished!!")
+                                break
                             # TODO: error control
                             # error - control socket has closed unexpectedly
                             # except pexpect.TIMEOUT:
