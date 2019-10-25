@@ -433,9 +433,9 @@ class Iperf(QObject):
                         self.child.logfile_read = sys.stdout
                         while True:
                             try:
-                                self.child.expect('\n')
+                                self.c.expect('\n')
                                 # print(child.after)
-                                self._handel_dataline(tID, self.schild.after)
+                                self._handel_dataline(tID, self.child.after)
                             except pexpect.EOF:
                                 break 
                         # need this to kill iperf3 procress
