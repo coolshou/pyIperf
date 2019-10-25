@@ -483,11 +483,11 @@ class Iperf(QObject):
                                 # break
                             
                         # print("before:%s" % type(self.child.before))
-                        # bfData = self.child.before
+                        bfData = self.child.before
                         # # print("bfData:%s" % bfData)
-                        # rs = bfData.rstrip()
-                        # self._handel_dataline(tID, rs)
-                        # QCoreApplication.processEvents()
+                        rs = bfData.rstrsip()
+                        self._handel_dataline(tID, rs)
+                        QCoreApplication.processEvents()
 
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
