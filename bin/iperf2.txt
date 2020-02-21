@@ -1,4 +1,4 @@
-v2.0.12
+v2.0.13
 Usage: iperf [-s|-c host] [options]
        iperf [-h|--help] [-v|--version]
 
@@ -14,6 +14,7 @@ Client/Server:
   -u, --udp                use UDP rather than TCP
       --udp-counters-64bit use 64 bit sequence numbers with UDP
   -w, --window    #[KM]    TCP window size (socket buffer size)
+  -z, --realtime           request realtime scheduler
   -B, --bind <host>[:<port>][%<dev>] bind to <host>, ip addr (including multicast address) and optional port and device
   -C, --compatibility      for use with older versions does not sent extra msgs
   -M, --mss       #        set TCP maximum segment size (MTU - 40 bytes)
