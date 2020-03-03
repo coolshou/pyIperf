@@ -156,7 +156,19 @@ class IperfClientTest(unittest.TestCase):
         # TCP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         'server':'192.168.1.1', 'protocal': %s, 'duration':5, \
-        'parallel':0, 'reverse':0, 'bidir':1, 'bitrate':0, \
+        'parallel':0, 'reverse':0, 'bidir':1, 'tradeoff':0, 'bitrate':0, \
+        'windowsize':-1, 'omit':2, \
+        'fmtreport':'m', 'version':2}" % (IPERFprotocal.get("TCP"))
+        ipc = self.run_iperf(ds, 5001, 2)
+        rs = ipc.get_result()
+        print("result:%s %s" % (type(rs), rs))
+
+    def test_get_result2_no_server(self):
+        '''get iperf v2 result'''
+        # TCP
+        ds = "{'mIPserver':'', 'mIPclient':'192.168.70.11', \
+        'server':'192.168.0.22', 'protocal': %s, 'duration':5, \
+        'parallel':6, 'reverse':0, 'bidir':1, 'tradeoff':1, 'bitrate':0, \
         'windowsize':-1, 'omit':2, \
         'fmtreport':'m', 'version':2}" % (IPERFprotocal.get("TCP"))
         ipc = self.run_iperf(ds, 5001, 2)
@@ -238,7 +250,8 @@ if __name__ == '__main__':
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
     # suite.addTest(IperfClientTest('test_get_result'))
-    # suite.addTest(IperfClientTest('test_get_result2'))
-    suite.addTest(IperfClientTest('test_get_resultdetail2'))
+    suite.addTest(IperfClientTest('test_get_result2'))
+    # suite.addTest(IperfClientTest('test_get_result2_no_server'))
+    # suite.addTest(IperfClientTest('test_get_resultdetail2'))
     # suite.addTest(IperfClientTest('test_get_result_bidir'))
     unittest.TextTestRunner(verbosity=2).run(suite)
