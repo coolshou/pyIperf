@@ -41,6 +41,27 @@ if platform.system() == 'Windows':
 if platform.system() == 'Linux':
     import pexpect
 
+IPERFUNIT = {}
+IPERFUNIT["bits"] = 0  # b
+IPERFUNIT["Kbits"] = 1  # kb
+IPERFUNIT["Mbits"] = 2  # mb
+IPERFUNIT["Gbits"] = 3  # gb
+IPERFUNIT["Tbits"] = 4  # tb
+IPERFUNIT["Pbits"] = 5  # pb
+IPERFUNIT["Ebits"] = 6  # eb
+IPERFUNIT["Zbits"] = 7  # zb
+IPERFUNIT["Ybits"] = 8  # yb
+
+IPERFUNIT["Bytes"] = 10  # B
+IPERFUNIT["KBytes"] = 11  # KB
+IPERFUNIT["MBytes"] = 12  # MB
+IPERFUNIT["GBytes"] = 13  # GB
+IPERFUNIT["TBytes"] = 14  # TB
+IPERFUNIT["PBytes"] = 15  # PB
+IPERFUNIT["EBytes"] = 16  # EB
+IPERFUNIT["ZBytes"] = 17  # ZB
+IPERFUNIT["YBytes"] = 18  # YB
+
 
 def kill(proc_pid):
     '''kill procress id'''
@@ -75,29 +96,6 @@ class IperfResult():
         self.totalSendUnit = ""
         self.throughput = ""
         self.throughputUnit = ""
-        # TODO: send -> server
-# [  9]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   1.31 MBytes
-# [ 11]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   2.00 MBytes
-# [ 17]   9.00-10.00  sec   292 MBytes  2.46 Gbits/sec    0   1.31 MBytes
-# [SUM]   9.00-10.00  sec  1.43 GBytes  12.3 Gbits/sec    0
-# - - - - - - - - - - - - - - - - - - - - - - - - -
-# [ ID] Interval           Transfer     Bitrate         Retr
-# [  5]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
-# [  5]   0.00-10.00  sec  2.97 GBytes  2.55 Gbits/sec                  receiver
-# [  7]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
-# [  7]   0.00-10.00  sec  2.97 GBytes  2.55 Gbits/sec                  receiver
-# [  9]   0.00-10.00  sec  2.96 GBytes  2.54 Gbits/sec    0             sender
-
-        #  -R mode, have different output format
-# [  9]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
-# [ 11]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
-# [ 17]   9.00-10.00  sec   310 MBytes  2.60 Gbits/sec
-# [SUM]   9.00-10.00  sec  1.51 GBytes  13.0 Gbits/sec
-# - - - - - - - - - - - - - - - - - - - - - - - - -
-# [ ID] Interval           Transfer     Bitrate         Retr
-# [  5]   0.00-9.99   sec  2.87 GBytes  2.47 Gbits/sec    0             sender
-# [  5]   0.00-10.00  sec  2.87 GBytes  2.46 Gbits/sec                  receiver
-# [  7]   0.00-9.99   sec  2.87 GBytes  2.47 Gbits/sec    0             sender
 
         #
         self.iParallel = iParallel
@@ -106,13 +104,6 @@ class IperfResult():
                 self.reportTime = datetime.datetime.now()
                 if ('sender' in result) or ('receiver' in result):
                     print("This is avg: %s" % result)
-                    # -P 2 TODO: should get SUM
-                    # [  5]   0.00-10.03  sec   562 MBytes   470 Mbits/sec                  sender
-                    # [  7]   0.00-10.03  sec   561 MBytes   469 Mbits/sec                  sender
-                    # [SUM]   0.00-10.03  sec  1.10 GBytes   939 Mbits/sec                  sender
-                    # -P 1
-                    # [  5]   0.00-10.00  sec  15.5 GBytes  13.3 Gbits/sec    0             sender
-                    # [  5]   0.00-10.00  sec  1.09 GBytes   937 Mbits/sec    0             sender
                     # return None
                     rs = result.strip().split(']')
                     self.idx = rs[0].replace('[', '').strip()
@@ -151,7 +142,7 @@ class IperfResult():
                     self.throughputUnit = u
                 # print(rs[5].strip())
                 # print(rs[6].strip())
-        except:
+        except Exception as err:
             self.error = True
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
@@ -319,8 +310,8 @@ class Iperf(QObject):
             self.proc = subprocess.Popen(cmd, shell=False, bufsize=1000,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
-        except:
-            self.traceback("execCmd")
+        except Exception as err:
+            self.traceback("execCmd:%s" % err)
             return None
 
         return self.proc
@@ -680,6 +671,8 @@ class Iperf(QObject):
                 if self.iperfver == 3:
                     self._parser_dataline3(iPall, tID, data)
                 elif self.iperfver == 2:
+                    # TODO: error data:
+                    # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
                     self._parser_dataline2(iPall, tID, data)
                 else:
                     self.log("TODO(iperf v%s)line: %s" % (self.iperfver, line))
