@@ -14,7 +14,7 @@ except ImportError:
     print("pip install PyQt5")
     raise SystemExit
 
-from iperfdlg import IperfClientDlg
+from iperfclientdlg import IperfClientDlg
 
 
 class Application(QApplication):

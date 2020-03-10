@@ -11,8 +11,9 @@ try:
     from PyQt5.QtCore import (pyqtSlot, pyqtSignal, QObject)
     from PyQt5.QtWidgets import (QWidget, QDialog)
     from PyQt5.uic import loadUi
-except ImportError:
+except ImportError as e:
     print("pip install PyQt5")
+    print("%s" % e)
     raise SystemExit
 
 
