@@ -41,6 +41,7 @@ if __name__ == "__main__":
     #code
     m = QMainWindow()
     chart = IperfChart()
+    chart.import_data("iperf3-data.txt")
     m.setCentralWidget(chart)
     m.show()
 
