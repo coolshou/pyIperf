@@ -427,21 +427,21 @@ class Iperf(QObject):
                         if 1:
                             env={"PYTHONUNBUFFERED": "1"}
                             self.child = subprocess.Popen(self.sCmd, shell=False,
-                                                      bufsize=1, 
+                                                      bufsize=1,
                                                       universal_newlines=True,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT,
                                                       env=env)
                             # need this to kill iperf3 procress
                             # atexit.register(self.kill_proc, self.child)
-    
+
                             if self.child is None:
-                                self.signal_finished.emit(-1, 
+                                self.signal_finished.emit(-1,
                                                           "command error:%S" % self.sCmd)
                                 return -1
                             # following will not get realtime output!!
                             for line in iter(self.child.stdout.readline, ''):
-                                rs = line.rstrip()  
+                                rs = line.rstrip()
                                 if rs:
                                     # output result
                                     self._handel_dataline(tID, rs)
@@ -458,14 +458,14 @@ class Iperf(QObject):
                                     self.signal_finished.emit(1, "set stop!!")
                                     break
                                 QCoreApplication.processEvents()
-                                
+
                         if 0:
                             # this will cause iperf3 -s not finish!!
                             self.proc = subprocess.Popen(" ".join(self.sCmd),
                                                      shell=False, bufsize=1,
                                                      stdout=subprocess.PIPE,
                                                      stderr=subprocess.STDOUT)
-                            
+
                             nbsr = NBSR(self.proc.stdout)
                             while self.proc.stdout.readable:
                                 line = nbsr.readline(0.1)
@@ -484,18 +484,18 @@ class Iperf(QObject):
                                                             self._handel_dataline(tID, val)
                                                     else:
                                                         self._handel_dataline(tID, rs)
-                                                
+
                                                 if "iperf Done" in s:
                                                     self.signal_finished.emit(0,
                                                                               "iperf Done!!")
-                                                    
+
                                                 # TODO error handle
                                 if self.stoped:
                                     self.signal_finished.emit(1,
                                                               "signal_finished!!")
                                     break
                                 QCoreApplication.processEvents()
-                        
+
                         if 0:
                             self.child = pexpect.spawn(" ".join(self.sCmd),
                                                        encoding='utf-8')
@@ -1107,7 +1107,6 @@ class IperfClient(QObject):
         # self._o["Iperf"].sCmd = self.sCmd
 
     def startTest(self):
-        # self.setClientCmd()
         self._o["Iperf"].stoped = False
         self._o["iThread"].start()
 
