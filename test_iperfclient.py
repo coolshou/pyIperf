@@ -15,7 +15,7 @@ from Iperf import IperfClient, IPERFprotocal
 
 try:
     # from PyQt5.QtWidgets import (QApplication)
-    from PyQt5.QtCore import (QCoreApplication, QMutex)
+    from PyQt5.QtCore import (QCoreApplication)
 except ImportError:
     print("pip install PyQt5")
     raise SystemExit
@@ -68,13 +68,12 @@ class IperfClientTest(unittest.TestCase):
         self.APP.startTimer(200)
         # test code
         # self.wl = Wlan()
-        self.mutex = QMutex()
 
     def run_iperf(self, data, port=5201, iperfver=3):
         # port = 5201
         ipcs = {}
         print("port: %s" % port)
-        ipc = IperfClient(port, data, iperfver=iperfver, mutex=self.mutex)
+        ipc = IperfClient(port, data, iperfver=iperfver)
         port = ipc.get_port()
         print("ipc: %s" % port)
         ipc.signal_result.connect(on_result)
@@ -199,12 +198,11 @@ class IperfClientTest(unittest.TestCase):
         '''get result'''
         # TCP
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-        'server':'192.168.0.47', 'protocal':0, 'duration':10, \
+        'server':'192.168.1.1', 'protocal':0, 'duration':10, \
         'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
         'windowsize':-1, 'omit':2, \
         'fmtreport':'m', 'version':3}"
         ipc = self.run_iperf(ds)
-        ipc.start()
         rs = ipc.get_result()
         print("result:%s %s" % (type(rs), rs))
 
@@ -251,8 +249,8 @@ if __name__ == '__main__':
     # suite.addTest(IperfClientTest('test_get_packeterrorrate'))
     # suite.addTest(IperfClientTest('test_get_packeterrorrate_parallel'))
     # suite.addTest(IperfClientTest('test_get_resultdetail'))
-    suite.addTest(IperfClientTest('test_get_result'))
-    # suite.addTest(IperfClientTest('test_get_result2'))
+    # suite.addTest(IperfClientTest('test_get_result'))
+    suite.addTest(IperfClientTest('test_get_result2'))
     # suite.addTest(IperfClientTest('test_get_result2_no_server'))
     # suite.addTest(IperfClientTest('test_get_resultdetail2'))
     # suite.addTest(IperfClientTest('test_get_result_bidir'))
