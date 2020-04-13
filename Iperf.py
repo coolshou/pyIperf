@@ -35,7 +35,6 @@ sys.path.append(os.path.join(basedir, "..", "..", "pyWAT"))
 from nbstreamreader import NonBlockingStreamReader as NBSR
 
 
-
 if platform.system() == 'Windows':
     import atexit
 if platform.system() == 'Linux':
@@ -418,136 +417,49 @@ class Iperf(QObject):
         while not self.exiting:
             try:
                 while len(self.sCmd) <= 0:
-                    QCoreApplication.processEvents()
+                    QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                     self.log("0", "wait sCmd", 4)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
                     if platform.system() == 'Linux':
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
-                        if 1:
-                            env={"PYTHONUNBUFFERED": "1"}
-                            self.child = subprocess.Popen(self.sCmd, shell=False,
+                        env = {"PYTHONUNBUFFERED": "1"}
+                        self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       bufsize=1,
                                                       universal_newlines=True,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT,
                                                       env=env)
-                            # need this to kill iperf3 procress
-                            # atexit.register(self.kill_proc, self.child)
+                        # need this to kill iperf3 procress
+                        # atexit.register(self.kill_proc, self.child)
 
-                            if self.child is None:
-                                self.signal_finished.emit(-1,
-                                                          "command error:%S" % self.sCmd)
-                                return -1
-                            # following will not get realtime output!!
-                            for line in iter(self.child.stdout.readline, ''):
-                                rs = line.rstrip()
-                                if rs:
-                                    # output result
-                                    self._handel_dataline(tID, rs)
-                                    if "iperf Down." in rs:
-                                        self.signal_finished.emit(0,
-                                                                  "iperf Down")
-                                        break
-                                else:
-                                    rc = self.child.poll()
-                                    if rc is not None:
-                                        self.signal_finished.emit(0,
-                                                                  "program exit(%s)" % rc)
-                                if self.stoped:
-                                    self.signal_finished.emit(1, "set stop!!")
+                        if self.child is None:
+                            self.signal_finished.emit(-1,
+                                                      "command error:%S" % self.sCmd)
+                            return -1
+                        # following will not get realtime output!!
+                        for line in iter(self.child.stdout.readline, ''):
+                            rs = line.rstrip()
+                            if rs:
+                                # output result
+                                self._handel_dataline(tID, rs)
+                                if "iperf Down." in rs:
+                                    self.signal_finished.emit(0,
+                                                              "iperf Down")
                                     break
-                                QCoreApplication.processEvents()
-
-                        if 0:
-                            # this will cause iperf3 -s not finish!!
-                            self.proc = subprocess.Popen(" ".join(self.sCmd),
-                                                     shell=False, bufsize=1,
-                                                     stdout=subprocess.PIPE,
-                                                     stderr=subprocess.STDOUT)
-
-                            nbsr = NBSR(self.proc.stdout)
-                            while self.proc.stdout.readable:
-                                line = nbsr.readline(0.1)
-                                if line:
-                                    if line != '':
-                                        msg = line.decode("utf-8")  # byte to str
-                                        if type(msg) is str:
-                                            # print("line: %s, %s" % (type(msg), msg))
-                                            s = msg.strip()
-                                            if s != "":
-                                                rs = line.rstrip()
-                                                if rs:
-                                                    if type(rs) == list:
-                                                        for val in rs:
-                                                            # handle line by line
-                                                            self._handel_dataline(tID, val)
-                                                    else:
-                                                        self._handel_dataline(tID, rs)
-
-                                                if "iperf Done" in s:
-                                                    self.signal_finished.emit(0,
-                                                                              "iperf Done!!")
-
-                                                # TODO error handle
-                                if self.stoped:
-                                    self.signal_finished.emit(1,
-                                                              "signal_finished!!")
-                                    break
-                                QCoreApplication.processEvents()
-
-                        if 0:
-                            self.child = pexpect.spawn(" ".join(self.sCmd),
-                                                       encoding='utf-8')
-                            # can not flush stdout ?
-                            # patterns = [pexpect.EOF, 'iperf Down.']
-                            # while True:
-                            while self.child.readable():
-                            # while not self.child.eof():
-                                line = self.child.readline()
-                                # print("line: %s" % line)
-                                if len(line) == 0:
-                                    pass
-                                else:
-                                    rs = line.rstrip()
-                                    if rs:
-                                        if type(rs) == list:
-                                            for val in rs:
-                                                # handle line by line
-                                                self._handel_dataline(tID, val)
-                                                # QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-                                        elif "iperf Down." in rs:
-                                            break
-                                        else:
-                                            self._handel_dataline(tID, rs)
-                                if self.stoped:
-                                    self.signal_finished.emit(1,
-                                                              "signal_finished!!")
-                                    break
-                                # ret = self.child.expect(patterns)
-                                # if ret == 0:
-                                #    break
-                                #elif ret == 1:
-                                #    break
-                                # time.sleep(1)
-
-                            # print("before:%s" % type(self.child.before))
-                            bfData = self.child.before
-                            # # print("bfData:%s" % bfData)
-                            rs = bfData.rstrsip()
-                            self._handel_dataline(tID, rs)
-                            afData = self.child.after
-                            rs = afData.rstrsip()
-                            self._handel_dataline(tID, rs)
-                            QCoreApplication.processEvents()
-
+                            else:
+                                rc = self.child.poll()
+                                if rc is not None:
+                                    self.signal_finished.emit(0,
+                                                              "program exit(%s)" % rc)
+                            if self.stoped:
+                                self.signal_finished.emit(1, "set stop!!")
+                                break
+                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
-                        # following will have extra shell to launch app
-                        # self.proc = subprocess.Popen(' '.join(self.sCmd), shell=True,
-                        #
                         self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       bufsize=1,
                                                       stdout=subprocess.PIPE,
@@ -576,7 +488,7 @@ class Iperf(QObject):
                         #         break
                         # rc = self.child.poll()
                         for line in iter(self.child.stdout.readline, b''):
-                            QCoreApplication.processEvents()
+                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                             rs = line.rstrip().decode("utf-8")
                             if rs:
                                 # output result
@@ -590,13 +502,13 @@ class Iperf(QObject):
                                 self.signal_finished.emit(1, "set stop!!")
                                 break
                     else:
-                        QCoreApplication.processEvents()
+                        QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                         if self.stoped:
                             self.signal_finished.emit(1, "set stop!!")
                             break
                         pass
                 else:
-                    QCoreApplication.processEvents()
+                    QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                     if self.stoped:
                         self.signal_finished.emit(1, "set stop!!")
                         break
@@ -615,7 +527,7 @@ class Iperf(QObject):
                 self.signal_finished.emit(1, "signal_finished!!")
                 break
 
-            QCoreApplication.processEvents()
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
             # time.sleep(2)
 
         self.log(0, "task end!!", 4)
