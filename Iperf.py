@@ -206,7 +206,8 @@ class IperfThread(QThread):
     def run(self):
         self.exec_()
 '''
-LOCKER = QMutex()
+# LOCKER = QMutex()
+LOCKER = None
 
 DEFAULT_IPERF3_PORT = 5201
 DEFAULT_IPERF2_PORT = 5001
@@ -345,16 +346,18 @@ class Iperf(QObject):
     @pyqtSlot()
     def do_stop(self):
         ''' stop the thread  '''
-        LOCKER.lock()
+        if LOCKER:
+            LOCKER.lock()
         self.stoped = True
         # if platform.system() == 'Linux':
         #    if self.child:
         #        self.child.terminate(force=True)
-        #elif platform.system() == 'Windows':
+        # elif platform.system() == 'Windows':
         if self.child:
             self.child.terminate()
         self.sCmd.clear()
-        LOCKER.unlock()
+        if LOCKER:
+            LOCKER.unlock()
 
     def get_port(self):
         '''return port'''
@@ -379,9 +382,11 @@ class Iperf(QObject):
         return self._detail
 
     def set_cmd(self, cmd):
-        LOCKER.lock()
+        if LOCKER:
+            LOCKER.lock()
         self.sCmd = cmd
-        LOCKER.unlock()
+        if LOCKER:
+            LOCKER.unlock()
 
     def set_parallel(self, parallel):
         '''set parallel to get correct result'''
