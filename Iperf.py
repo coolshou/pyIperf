@@ -1059,8 +1059,8 @@ class IperfClient(QObject):
         return self._o["iThread"].isRunning()
 
     def stop(self):
-        # self.log(self.__class__.__name__, self.RxIperf.getPID())
-        self._o["Iperf"].do_stop()
+        if self._o["Iperf"]:
+            self._o["Iperf"].do_stop()
 
     def log(self, mType, msg, level=1):
         '''logging.INFO = 20'''
