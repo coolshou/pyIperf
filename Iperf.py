@@ -281,6 +281,7 @@ class Iperf(QObject):
         self._result = {}  # store final in dict format
         self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
+        self.child = None  # subprocress of iperf
         '''store iperf UDP packet error rate (PER) result'''
         # self._per = ""
         self._per = {}
@@ -351,7 +352,8 @@ class Iperf(QObject):
         self.stoped = True
         if self.child:
             self.child.terminate()
-            del self.child
+            # set proc obj to None to remove Z (Zombie) proc under linux
+            self.child = None
         self.sCmd.clear()
         if LOCKER:
             LOCKER.unlock()
