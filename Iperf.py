@@ -349,12 +349,9 @@ class Iperf(QObject):
         if LOCKER:
             LOCKER.lock()
         self.stoped = True
-        # if platform.system() == 'Linux':
-        #    if self.child:
-        #        self.child.terminate(force=True)
-        # elif platform.system() == 'Windows':
         if self.child:
             self.child.terminate()
+            del self.child
         self.sCmd.clear()
         if LOCKER:
             LOCKER.unlock()
