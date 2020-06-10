@@ -254,7 +254,6 @@ class Iperf(QObject):
         self.iperf = os.path.join(self._basedir, 'bin', platform.system())
         if platform.system() == 'Linux':
             self.iperf = os.path.join(self.iperf, arch, '%s' % iperfname)
-
         if platform.system() == 'Windows':
             self.iperf = os.path.join(self.iperf, arch, '%s.exe' % iperfname)
             # self.iperf = self.iperf + '.exe'
@@ -435,8 +434,7 @@ class Iperf(QObject):
                                                       stderr=subprocess.STDOUT,
                                                       env=env)
                         # need this to kill iperf3 procress
-                        # atexit.register(self.kill_proc, self.child)
-
+                        atexit.register(self.kill_proc, self.child)
                         if self.child is None:
                             self.signal_finished.emit(-1,
                                                       "command error:%S" % self.sCmd)
@@ -530,10 +528,7 @@ class Iperf(QObject):
             if self.stoped:
                 self.signal_finished.emit(1, "signal_finished!!")
                 break
-
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
-            # time.sleep(2)
-
         self.log(0, "task end!!", 4)
         self.signal_finished.emit(1, "task end!!")
 
