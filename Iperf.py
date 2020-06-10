@@ -434,7 +434,7 @@ class Iperf(QObject):
                                                       stderr=subprocess.STDOUT,
                                                       env=env)
                         # need this to kill iperf3 procress
-                        atexit.register(self.kill_proc, self.child)
+                        # atexit.register(self.kill_proc, self.child)
                         if self.child is None:
                             self.signal_finished.emit(-1,
                                                       "command error:%S" % self.sCmd)
