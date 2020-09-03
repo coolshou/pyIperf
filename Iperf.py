@@ -729,7 +729,7 @@ class IperfServer(QObject):
         '''iperf server command'''
         self.log("0", "setServerCmd")
         sCmd = [self._o["Iperf"].iperf, '-s', '-p', str(self._o["Iperf"].port),
-                "-i", "1", "--forceflush"]
+                "-i", "1", "--forceflush", "--one-off"]
 
         # self._o["Iperf"].sCmd = sCmd
         self._o["Iperf"].set_cmd(sCmd)
