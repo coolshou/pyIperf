@@ -532,9 +532,12 @@ class Iperf(QObject):
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
-        # recore every line
+        '''handle data output from iperf'''
         curDirection = "Tx"
-        self._detail.append(line.strip())
+        detail = line.strip()
+        if len(detail)>0:
+            # recore every line except empty line
+            self._detail.append(detail)
         if ("[" in line) and ("]" in line):
             # this suould be data we care
             if "local" in line:
@@ -557,7 +560,7 @@ class Iperf(QObject):
                 if self.iperfver == 2:
                     # iperf2: determine Tx or Rx
                     if "port 5001" in data:
-                        idx = data.index("prot 5001")
+                        idx = data.index("port 5001")
                         if idx > 50:
                             # should be Tx
                             curDirection = "Tx"
