@@ -835,6 +835,10 @@ class IperfClient(QObject):
         self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].start()
 
+    def get_cmd(self):
+        '''get cmd '''
+        return self.sCmd
+
     def setRowCol(self, Row, Col):
         self._opt["row"] = Row
         self._opt["col"] = Col
@@ -1060,7 +1064,5 @@ class IperfClient(QObject):
             self._o["Iperf"].do_stop()
 
     def log(self, mType, msg, level=1):
-        '''logging.INFO = 20'''
-        # show on stdout
         if self._DEBUG > level:
             self.signal_debug.emit(self.__class__.__name__, msg)
