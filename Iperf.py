@@ -467,8 +467,7 @@ class Iperf(QObject):
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
-                        atexit.register(self.kill_proc, self.child)
-
+                        # atexit.register(self.kill_proc, self.child)
                         if self.child is None:
                             self.signal_finished.emit(-1, "command error")
                             return -1
@@ -690,7 +689,6 @@ class Iperf(QObject):
                                                             err))
 
 
-# class IperfServer(Iperf):
 class IperfServer(QObject):
     """ A network testing server that will start an iperf3 in QThread
     server on any given port."""
@@ -787,7 +785,6 @@ class IperfServer(QObject):
             self.signal_debug.emit(self.__class__.__name__, msg)
 
 
-# class IperfClient(Iperf):
 class IperfClient(QObject):
     # row, col, thread, iParallel, data
     signal_result = pyqtSignal(int, int, int, int, str)
