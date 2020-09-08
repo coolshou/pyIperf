@@ -890,6 +890,7 @@ class IperfClient(QObject):
             return
 
         self.server = ds.get("server")
+        bind_client = ds.get("client", "")
         protocal = ds.get("protocal")
         self._o["Iperf"].set_protocal(protocal)
         duration = ds.get("duration")
@@ -906,6 +907,8 @@ class IperfClient(QObject):
 
         self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
                      '-p', "%s" % (self.port), '-i', '1']
+        if bind_client:
+            self.sCmd.append('-B %s' % bind_client)
         if protocal == 0:
             pass
         else:
