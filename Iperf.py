@@ -912,39 +912,40 @@ class IperfClient(QObject):
         self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
                      '-p', "%s" % (self.port), '-i', '1']
         if bind_client:
-            self.sCmd.append('-B %s' % bind_client)
+            self.sCmd.append("-B")
+            self.sCmd.append("%s" % bind_client)
         if protocal == 0:
             pass
         else:
-            self.sCmd.append('-u')
+            self.sCmd.append("-u")
 
         if duration > 0:
-            self.sCmd.append('-t')
+            self.sCmd.append("-t")
             self.sCmd.append("%s" % duration)
             self._o["Iperf"].set_duration(duration)
 
         if parallel > 1:
-            self.sCmd.append('-P')
+            self.sCmd.append("-P")
             self.sCmd.append("%s" % parallel)
             self._o["Iperf"].set_parallel(parallel)
 
         # run in reverse mode (server sends, client receives)
         if reverse == 1:
             # iperf v2.0.12 Linux not support this
-            self.sCmd.append('-R')
+            self.sCmd.append("-R")
         if tradeoff == 1:
             # this will cause iperf2.0.5 server terminal when finish test!!
-            self.sCmd.append('--tradeoff')  # --tradeoff
+            self.sCmd.append("--tradeoff")  # --tradeoff
             self._o["Iperf"].set_tradeoff(tradeoff)
         else:
             if bidir == 1:
                 if self._opt["version"] == 3:
-                    self.sCmd.append('--bidir')
+                    self.sCmd.append("--bidir")
                 else:
-                    self.sCmd.append('-d')  # --dualtest
+                    self.sCmd.append("-d")  # --dualtest
 
         if bitrate > 0:
-            self.sCmd.append('-b')
+            self.sCmd.append("-b")
             self.sCmd.append("%s%s" % (bitrate, unit_bitrate))
         #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
@@ -976,7 +977,7 @@ class IperfClient(QObject):
             if windowsize > 425984:
                 self.log("0", "Max window size is %s" % 425984)
                 windowsize = 425984
-            self.sCmd.append('-w')
+            self.sCmd.append("-w")
             if unit_windowsize not in ["K", "M", "G"]:
                 windowsize = "%sK" % windowsize
             else:
@@ -985,22 +986,20 @@ class IperfClient(QObject):
 
         if omit > 0:
             if self._opt["version"] == 3:
-                self.sCmd.append('-O')
+                self.sCmd.append("-O")
                 self.sCmd.append("%s" % omit)
 
         if fmtreport:
-            self.sCmd.append('-f')
+            self.sCmd.append("-f")
             self.sCmd.append(fmtreport)
 
         # --logfile f: log output to file
         if self._opt["version"] == 3:
             # --connect-timeout ms
-            self.sCmd.append('--connect-timeout')
+            self.sCmd.append("--connect-timeout")
             self.sCmd.append('%s' % self._opt["conTimeout"])
             # force flush output
-            self.sCmd.append('--forceflush')
-
-        # if sFromat:
+            self.sCmd.append("--forceflush")
 
         # TODO:  -l, --len #[KMG]
         # length of buffer to read or write
