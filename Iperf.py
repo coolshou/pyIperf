@@ -24,7 +24,7 @@ import re
 
 try:
     from PyQt5.QtCore import (QCoreApplication, QThread, QEventLoop,
-                              pyqtSlot, pyqtSignal, QObject, QMutex)
+                              pyqtSlot, pyqtSignal, QObject)
     # from PyQt5.QtWidgets import (QApplication)
 except ImportError:
     print("pip install PyQt5")
@@ -35,10 +35,10 @@ sys.path.append(os.path.join(basedir, "..", "..", "pyWAT"))
 from nbstreamreader import NonBlockingStreamReader as NBSR
 
 
-if platform.system() == 'Windows':
-    import atexit
-if platform.system() == 'Linux':
-    import pexpect
+# if platform.system() == 'Windows':
+#     import atexit
+# if platform.system() == 'Linux':
+#     import pexpect
 
 IPERFUNIT = {}
 IPERFUNIT["bits"] = 0  # b
@@ -142,6 +142,7 @@ class IperfResult():
                 # print(rs[5].strip())
                 # print(rs[6].strip())
         except Exception as err:
+            print("IperfResult init: %s" % err)
             self.error = True
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
@@ -215,7 +216,7 @@ DEFAULT_IPERF2_PORT = 5001
 
 class Iperf(QObject):
     '''python of iperf2/iperf3 class'''
-    __VERSION__ = '20190711'
+    __VERSION__ = '20201123'
 
     # thread id, iParallel, data
     signal_result = pyqtSignal(int, int, str)
@@ -437,7 +438,7 @@ class Iperf(QObject):
                         # atexit.register(self.kill_proc, self.child)
                         if self.child is None:
                             self.signal_finished.emit(-1,
-                                                      "command error:%S" % self.sCmd)
+                                                      "command error:%s" % self.sCmd)
                             return -1
                         # following will not get realtime output!!
                         for line in iter(self.child.stdout.readline, ''):
@@ -472,22 +473,6 @@ class Iperf(QObject):
                             self.signal_finished.emit(-1, "command error")
                             return -1
 
-                        # following will block
-                        # do task, wait procress finish
-                        # while True:
-                        #     output = self.child.stdout.readline()
-                        #     if output == '':
-                        #         rc = self.child.poll()
-                        #         if rc is not None:
-                        #             self.signal_finished.emit(0,
-                        #                                       "program exit(%s)" % rc)
-                        #             break
-                        #     if output:
-                        #         self._handel_dataline(tID, output)
-                        #     if self.stoped:
-                        #         self.signal_finished.emit(1, "set stop!!")
-                        #         break
-                        # rc = self.child.poll()
                         for line in iter(self.child.stdout.readline, b''):
                             QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                             rs = line.rstrip().decode("utf-8")
@@ -902,6 +887,7 @@ class IperfClient(QObject):
         interval = ds.get("interval")
         reverse = ds.get("reverse")
         bidir = ds.get("bidir")  # bi-direction
+        OldIperf3 = ds.get("OldIperf3")  # OldIperf3 which not support --bidir
         tradeoff = ds.get("tradeoff", 0)
         bitrate = ds.get("bitrate")
         unit_bitrate = ds.get("unit_bitrate")
@@ -941,7 +927,10 @@ class IperfClient(QObject):
         else:
             if bidir == 1:
                 if self._opt["version"] == 3:
-                    self.sCmd.append("--bidir")
+                    if not OldIperf3:
+                        self.sCmd.append("--bidir")
+                    else:
+                        print("Not support --bidir on old iperf3 (<3.7)")
                 else:
                     self.sCmd.append("-d")  # --dualtest
 
