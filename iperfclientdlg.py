@@ -47,35 +47,35 @@ class IperfClientDlg(QDialog):
         if type(cfg) == QSettings:
             self.settings.beginGroup("iperf")
             #iper ver self._iperf["ver"]
-            self.ver = self.settings.value('ver', 3)
-            self.sbPort.setValue(self.settings.value('port', 5201))
+            self.ver = self.settings.value('ver', 3, type=int)
+            self.sbPort.setValue(self.settings.value('port', 5201, type=int))
             sformat = self.settings.value('format', "m")
             idx = self.cbFormat.findText(sformat)
             if idx:
                 self.cbFormat.setCurrentIndex(idx)
-            self.sbInterval.setValue(self.settings.value('interval', 1))
+            self.sbInterval.setValue(self.settings.value('interval', 1, type=int))
             self.leHost.setText(self.settings.value('host', "192.168.1.1"))
-            self.cbReverse.setChecked(self.settings.value('reverse', False))
-            self.sbDuration.setValue(self.settings.value('duration', 90))
+            self.cbReverse.setChecked(self.settings.value('reverse', False, type=bool))
+            self.sbDuration.setValue(self.settings.value('duration', 90, type=int))
             protocal = self.settings.value('protocal', "TCP")
             if protocal == "TCP":
                 self.rbTCP.setChecked(True)
             else:
                 self.rbTCP.setChecked(False)
-            self.sbParallel.setValue(self.settings.value('parallel', 1))
-            self.sbWindowSize.setValue(self.settings.value('windowSize', 64))
+            self.sbParallel.setValue(self.settings.value('parallel', 1, type=int))
+            self.sbWindowSize.setValue(self.settings.value('windowSize', 64, type=int))
             windowSizeUnit = self.settings.value('windowSizeUnit', "K")
             idx = self.cbWindowSizeUnit.findText(windowSizeUnit)
             if idx:
                 self.cbWindowSizeUnit.setCurrentIndex(idx)
-            self.sbBitrate.setValue(self.settings.value('bitrate', 0))
+            self.sbBitrate.setValue(self.settings.value('bitrate', 0, type=int))
             bitrateUnit = self.settings.value('bitrateUnit', "K")
             idx = self.cbBitrateUnit.findText(bitrateUnit)
             if idx:
                 self.cbBitrateUnit.setCurrentIndex(idx)
-            self.sbMTU.setValue(self.settings.value('MTU', 1460))
+            self.sbMTU.setValue(self.settings.value('MTU', 1460, type=int))
             # manager server/client
-            mServer = self.settings.value('mServer', False)
+            mServer = self.settings.value('mServer', False, type=bool)
             self.gb_server.setChecked(mServer)
             managerServer = self.settings.value('managerServer', "192.168.110.10")
             idx = self.cb_managerServer.findText(managerServer)
