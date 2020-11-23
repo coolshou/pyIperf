@@ -8,8 +8,9 @@ Created on Sat Jun 29 23:01:33 2019
 import sys
 import os
 try:
-    from PyQt5.QtCore import (pyqtSlot, pyqtSignal, QObject, QSettings)
-    from PyQt5.QtWidgets import (QWidget, QDialog)
+    from PyQt5.QtCore import (pyqtSlot, QSettings)
+    from PyQt5.QtWidgets import (QDialog)
+    from PyQt5.QtGui import (QIcon)
     from PyQt5.uic import loadUi
 except ImportError as e:
     print("pip install PyQt5")
@@ -30,6 +31,7 @@ class IperfClientDlg(QDialog):
             # we are running in a normal Python environment
             self._basedir = os.path.dirname(__file__)
         ui = os.path.join(self._basedir, "iperfclientdlg.ui")
+        ico = os.path.join(self._basedir, "images", "qperf.png")
         loadUi(ui, self)
         self.settings = cfg
         # TODO cfg parser
@@ -37,6 +39,8 @@ class IperfClientDlg(QDialog):
 
         self.pb_ok.clicked.connect(self.slot_ok)
         self.pb_cancel.clicked.connect(self.slot_cancel)
+        self.setWindowIcon(QIcon(ico))
+
 
     def load_cfg(self, cfg):
         '''dict iperf cfg to show on UI'''
