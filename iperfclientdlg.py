@@ -57,7 +57,7 @@ class IperfClientDlg(QDialog):
             if idx:
                 self.cbFormat.setCurrentIndex(idx)
             self.sbInterval.setValue(self.settings.value('interval', 1, type=int))
-            self.leHost.setText(self.settings.value('host', "192.168.1.1"))
+            self.leHost.setText(self.settings.value('server', "192.168.1.1"))
             self.cbReverse.setChecked(self.settings.value('reverse', False, type=bool))
             self.cbBidir.setChecked(self.settings.value('bidir', False, type=bool))
             self.cbOldIperf3.setChecked(self.settings.value('OldIperf3', False, type=bool))
@@ -100,7 +100,7 @@ class IperfClientDlg(QDialog):
             self.settings.setValue('port', self.sbPort.value())
             self.settings.setValue('format', self.cbFormat.currentText())
             self.settings.setValue('interval', self.sbInterval.value())
-            self.settings.setValue('host', self.leHost.text())
+            self.settings.setValue('server', self.leHost.text())
             self.settings.setValue('reverse', self.cbReverse.isChecked())
             self.settings.setValue('bidir', self.cbBidir.isChecked())
             self.settings.setValue('OldIperf3', self.cbOldIperf3.isChecked())
