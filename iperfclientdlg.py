@@ -47,7 +47,10 @@ class IperfClientDlg(QDialog):
         if type(cfg) == QSettings:
             self.settings.beginGroup("iperf")
             #iper ver self._iperf["ver"]
-            self.ver = self.settings.value('ver', 3, type=int)
+            ver = self.settings.value('ver', 3, type=int)
+            idx = self.cbVer.findText("%s" % ver)
+            if idx:
+                self.cbVer.setCurrentIndex(idx)
             self.sbPort.setValue(self.settings.value('port', 5201, type=int))
             sformat = self.settings.value('format', "m")
             idx = self.cbFormat.findText(sformat)
@@ -56,6 +59,9 @@ class IperfClientDlg(QDialog):
             self.sbInterval.setValue(self.settings.value('interval', 1, type=int))
             self.leHost.setText(self.settings.value('host', "192.168.1.1"))
             self.cbReverse.setChecked(self.settings.value('reverse', False, type=bool))
+            self.cbBidir.setChecked(self.settings.value('bidir', False, type=bool))
+            self.cbOldIperf3.setChecked(self.settings.value('OldIperf3', False, type=bool))
+
             self.sbDuration.setValue(self.settings.value('duration', 90, type=int))
             protocal = self.settings.value('protocal', "TCP")
             if protocal == "TCP":
@@ -90,12 +96,14 @@ class IperfClientDlg(QDialog):
     def save_cfg(self):
         if type(self.settings) == QSettings:
             self.settings.beginGroup("iperf")
-            self.settings.setValue('ver', self.ver)
+            self.settings.setValue('ver', int(self.cbVer.currentText()))
             self.settings.setValue('port', self.sbPort.value())
             self.settings.setValue('format', self.cbFormat.currentText())
             self.settings.setValue('interval', self.sbInterval.value())
             self.settings.setValue('host', self.leHost.text())
             self.settings.setValue('reverse', self.cbReverse.isChecked())
+            self.settings.setValue('bidir', self.cbBidir.isChecked())
+            self.settings.setValue('OldIperf3', self.cbOldIperf3.isChecked())
             self.settings.setValue('duration', self.sbDuration.value())
             if self.rbTCP.isChecked():
                 protocal = "TCP"
