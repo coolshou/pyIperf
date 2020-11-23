@@ -52,7 +52,7 @@ class IperfClientDlg(QDialog):
             if idx:
                 self.cbVer.setCurrentIndex(idx)
             self.sbPort.setValue(self.settings.value('port', 5201, type=int))
-            sformat = self.settings.value('format', "m")
+            sformat = self.settings.value('fmtreport', "m")
             idx = self.cbFormat.findText(sformat)
             if idx:
                 self.cbFormat.setCurrentIndex(idx)
@@ -80,8 +80,10 @@ class IperfClientDlg(QDialog):
             if idx:
                 self.cbBitrateUnit.setCurrentIndex(idx)
             self.sbMTU.setValue(self.settings.value('MTU', 1460, type=int))
+            self.sbOmit.setValue(self.settings.value('omit', 2, type=int))
+
             # manager server/client
-            mServer = self.settings.value('mServer', False, type=bool)
+            mServer = self.settings.value('bControlManagerServer', False, type=bool)
             self.gb_server.setChecked(mServer)
             managerServer = self.settings.value('managerServer', "192.168.110.10")
             idx = self.cb_managerServer.findText(managerServer)
@@ -98,7 +100,7 @@ class IperfClientDlg(QDialog):
             self.settings.beginGroup("iperf")
             self.settings.setValue('ver', int(self.cbVer.currentText()))
             self.settings.setValue('port', self.sbPort.value())
-            self.settings.setValue('format', self.cbFormat.currentText())
+            self.settings.setValue('fmtreport', self.cbFormat.currentText())
             self.settings.setValue('interval', self.sbInterval.value())
             self.settings.setValue('server', self.leHost.text())
             self.settings.setValue('reverse', self.cbReverse.isChecked())
@@ -116,8 +118,9 @@ class IperfClientDlg(QDialog):
             self.settings.setValue('bitrate', self.sbBitrate.value())
             self.settings.setValue('bitrateUnit', self.cbBitrateUnit.currentText())
             self.settings.setValue('MTU', self.sbMTU.value())
+            self.settings.setValue('omit', self.sbOmit.value())
             # manager server/client
-            self.settings.setValue('mServer', self.gb_server.isChecked())
+            self.settings.setValue('bControlManagerServer', self.gb_server.isChecked())
             self.settings.setValue('managerServer', self.cb_managerServer.currentText())
             self.settings.setValue('managerClient', self.cb_managerClient.currentText())
             self.settings.endGroup()
