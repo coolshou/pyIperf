@@ -60,7 +60,7 @@ class IperfClientDlg(QDialog):
             self.leHost.setText(self.settings.value('server', "192.168.1.1"))
             self.cbReverse.setChecked(self.settings.value('reverse', False, type=bool))
             self.cbBidir.setChecked(self.settings.value('bidir', False, type=bool))
-            self.cbOldIperf3.setChecked(self.settings.value('OldIperf3', False, type=bool))
+            self.cbOldIperf3.setChecked(self.settings.value('OldIperf3', False, type=int))
 
             self.sbDuration.setValue(self.settings.value('duration', 90, type=int))
             protocal = self.settings.value('protocal', "TCP")
