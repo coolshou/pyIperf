@@ -899,6 +899,7 @@ class IperfClient(QObject):
         self._o["Iperf"].set_protocal(protocal)
         duration = ds.get("duration")
         parallel = ds.get("parallel")
+        interval = ds.get("interval")
         reverse = ds.get("reverse")
         bidir = ds.get("bidir")  # bi-direction
         tradeoff = ds.get("tradeoff", 0)
@@ -910,7 +911,7 @@ class IperfClient(QObject):
         omit = ds.get("omit")
 
         self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
-                     '-p', "%s" % (self.port), '-i', '1']
+                     '-p', "%s" % (self.port), '-i', '%s' % interval]
         if bind_client:
             self.sCmd.append("-B")
             self.sCmd.append("%s" % bind_client)
