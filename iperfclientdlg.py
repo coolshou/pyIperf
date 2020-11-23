@@ -92,7 +92,7 @@ class IperfClientDlg(QDialog):
             self.settings.beginGroup("iperf")
             self.settings.setValue('ver', self.ver)
             self.settings.setValue('port', self.sbPort.value())
-            self.settings.setValue('format', self.cbFormat.CurrentText())
+            self.settings.setValue('format', self.cbFormat.currentText())
             self.settings.setValue('interval', self.sbInterval.value())
             self.settings.setValue('host', self.leHost.text())
             self.settings.setValue('reverse', self.cbReverse.isChecked())
@@ -103,14 +103,14 @@ class IperfClientDlg(QDialog):
                 protocal = "UDP"
             self.settings.setValue('protocal', protocal)
             self.settings.setValue('windowSize', self.sbWindowSize.value())
-            self.settings.setValue('windowSizeUnit', self.cbWindowSizeUnit.CurrentText())
+            self.settings.setValue('windowSizeUnit', self.cbWindowSizeUnit.currentText())
             self.settings.setValue('bitrate', self.sbBitrate.value())
-            self.settings.setValue('bitrateUnit', self.cbBitrateUnit.CurrentText())
+            self.settings.setValue('bitrateUnit', self.cbBitrateUnit.currentText())
             self.settings.setValue('MTU', self.sbMTU.value())
             # manager server/client
             self.settings.setValue('mServer', self.gb_server.isChecked())
-            self.settings.setValue('managerServer', self.cb_managerServer.CurrentText())
-            self.settings.setValue('managerClient', self.cb_managerClient.CurrentText())
+            self.settings.setValue('managerServer', self.cb_managerServer.currentText())
+            self.settings.setValue('managerClient', self.cb_managerClient.currentText())
             self.settings.endGroup()
 
     @pyqtSlot()
