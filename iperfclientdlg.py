@@ -58,8 +58,8 @@ class IperfClientDlg(QDialog):
                 self.cbFormat.setCurrentIndex(idx)
             self.sbInterval.setValue(self.settings.value('interval', 1, type=int))
             self.leHost.setText(self.settings.value('server', "192.168.1.1"))
-            self.cbReverse.setChecked(self.settings.value('reverse', False, type=bool))
-            self.cbBidir.setChecked(self.settings.value('bidir', False, type=bool))
+            self.cbReverse.setChecked(self.settings.value('reverse', 0, type=int))
+            self.cbBidir.setChecked(self.settings.value('bidir', 0, type=int))
             self.cbOldIperf3.setChecked(self.settings.value('OldIperf3', 0, type=int))
 
             self.sbDuration.setValue(self.settings.value('duration', 90, type=int))
@@ -83,7 +83,7 @@ class IperfClientDlg(QDialog):
             self.sbOmit.setValue(self.settings.value('omit', 2, type=int))
 
             # manager server/client
-            mServer = self.settings.value('bControlManagerServer', False, type=bool)
+            mServer = self.settings.value('bControlManagerServer', 0, type=int)
             self.gb_server.setChecked(mServer)
             managerServer = self.settings.value('managerServer', "192.168.110.10")
             idx = self.cb_managerServer.findText(managerServer)
@@ -103,9 +103,9 @@ class IperfClientDlg(QDialog):
             self.settings.setValue('fmtreport', self.cbFormat.currentText())
             self.settings.setValue('interval', self.sbInterval.value())
             self.settings.setValue('server', self.leHost.text())
-            self.settings.setValue('reverse', self.cbReverse.isChecked())
-            self.settings.setValue('bidir', self.cbBidir.isChecked())
-            self.settings.setValue('OldIperf3', self.cbOldIperf3.isChecked())
+            self.settings.setValue('reverse', int(self.cbReverse.isChecked()))
+            self.settings.setValue('bidir', int(self.cbBidir.isChecked()))
+            self.settings.setValue('OldIperf3', int(self.cbOldIperf3.isChecked()))
             self.settings.setValue('duration', self.sbDuration.value())
             if self.rbTCP.isChecked():
                 protocal = "TCP"
@@ -120,7 +120,7 @@ class IperfClientDlg(QDialog):
             self.settings.setValue('MTU', self.sbMTU.value())
             self.settings.setValue('omit', self.sbOmit.value())
             # manager server/client
-            self.settings.setValue('bControlManagerServer', self.gb_server.isChecked())
+            self.settings.setValue('bControlManagerServer', int(self.gb_server.isChecked()))
             self.settings.setValue('managerServer', self.cb_managerServer.currentText())
             self.settings.setValue('managerClient', self.cb_managerClient.currentText())
             self.settings.endGroup()
