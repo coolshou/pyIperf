@@ -102,6 +102,7 @@ class IperfClientDlg(QDialog):
             else:
                 protocal = "UDP"
             self.settings.setValue('protocal', protocal)
+            self.settings.setValue('parallel', self.sbParallel.value())
             self.settings.setValue('windowSize', self.sbWindowSize.value())
             self.settings.setValue('windowSizeUnit', self.cbWindowSizeUnit.currentText())
             self.settings.setValue('bitrate', self.sbBitrate.value())
