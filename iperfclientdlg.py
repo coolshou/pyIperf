@@ -46,6 +46,8 @@ class IperfClientDlg(QDialog):
         '''dict iperf cfg to show on UI'''
         if type(cfg) == QSettings:
             self.settings.beginGroup("iperf")
+            #iper ver self._iperf["ver"]
+            self.ver = self.settings.value('ver', 3)
             self.sbPort.setValue(self.settings.value('port', 5201))
             sformat = self.settings.value('format', "m")
             idx = self.cbFormat.findText(sformat)
@@ -88,6 +90,7 @@ class IperfClientDlg(QDialog):
     def save_cfg(self):
         if type(self.settings) == QSettings:
             self.settings.beginGroup("iperf")
+            self.settings.setValue('ver', self.ver)
             self.settings.setValue('port', self.sbPort.value())
             self.settings.setValue('format', self.cbFormat.CurrentText())
             self.settings.setValue('interval', self.sbInterval.value())
