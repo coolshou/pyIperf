@@ -9,6 +9,7 @@ import sys
 import signal
 try:
     from PyQt5.QtWidgets import (QApplication)
+    from PyQt5.QtCore import (QSettings)
 #    from PyQt5.QtCore import (QCoreApplication)
 except ImportError:
     print("pip install PyQt5")
@@ -39,7 +40,8 @@ if __name__ == "__main__":
     # You can change the timer parameter as you like.
     APP.startTimer(200)
     #code
-    dlg = IperfClientDlg()
+    cfg = QSettings()
+    dlg = IperfClientDlg(cfg)
     dlg.exec()
-
+    dlg.finished.connect(APP.exit)
     sys.exit(APP.exec_())

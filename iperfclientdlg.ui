@@ -117,7 +117,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="comboBoxFormat">
+             <widget class="QComboBox" name="cbFormat">
               <property name="currentText">
                <string>k</string>
               </property>
@@ -226,7 +226,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="spinBox">
+             <widget class="QSpinBox" name="sbInterval">
               <property name="toolTip">
                <string>seconds between periodic throughput reports</string>
               </property>
@@ -259,8 +259,17 @@
    </item>
    <item>
     <widget class="QGroupBox" name="gb_server">
+     <property name="toolTip">
+      <string>checked to control iperf server</string>
+     </property>
      <property name="title">
       <string>Server:</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_18">
       <property name="spacing">
@@ -301,6 +310,9 @@
              <width>200</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="editable">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -373,6 +385,9 @@
              <width>200</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="editable">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -844,7 +859,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="spParallel">
+             <widget class="QSpinBox" name="sbParallel">
               <property name="value">
                <number>1</number>
               </property>
@@ -982,10 +997,14 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="sbBitrate"/>
+             <widget class="QSpinBox" name="sbBitrate">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;target bitrate in bits/sec (0 for unlimited)&lt;/p&gt;&lt;p&gt;(&lt;span style=&quot; font-weight:600;&quot;&gt;default 1 Mbit/sec for UDP&lt;/span&gt;, unlimited for TCP)&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="comboBitrateUnit">
+             <widget class="QComboBox" name="cbBitrateUnit">
               <item>
                <property name="text">
                 <string>K</string>
