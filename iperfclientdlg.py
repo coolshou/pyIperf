@@ -35,10 +35,11 @@ class IperfClientDlg(QDialog):
         loadUi(ui, self)
         self.settings = cfg
         # TODO cfg parser
-        self.load_cfg( self.settings)
+        self.load_cfg(self.settings)
 
         self.pb_ok.clicked.connect(self.slot_ok)
         self.pb_cancel.clicked.connect(self.slot_cancel)
+        self.pbCMD.clicked.connect(self.on_cmd)
         self.setWindowIcon(QIcon(ico))
 
 
@@ -81,6 +82,7 @@ class IperfClientDlg(QDialog):
                 self.cbBitrateUnit.setCurrentIndex(idx)
             self.sbMTU.setValue(self.settings.value('MTU', 1460, type=int))
             self.sbOmit.setValue(self.settings.value('omit', 2, type=int))
+            self.sbConTimeout.setValue(self.settings.value('conTimeout', 5000, type=int))
 
             # manager server/client
             mServer = self.settings.value('bControlManagerServer', 0, type=int)
@@ -119,6 +121,7 @@ class IperfClientDlg(QDialog):
             self.settings.setValue('bitrateUnit', self.cbBitrateUnit.currentText())
             self.settings.setValue('MTU', self.sbMTU.value())
             self.settings.setValue('omit', self.sbOmit.value())
+            self.settings.setValue('conTimeout', self.sbConTimeout.value())
             # manager server/client
             self.settings.setValue('bControlManagerServer', int(self.gb_server.isChecked()))
             self.settings.setValue('managerServer', self.cb_managerServer.currentText())
@@ -133,3 +136,8 @@ class IperfClientDlg(QDialog):
     @pyqtSlot()
     def slot_cancel(self):
         self.reject()
+
+    @pyqtSlot()
+    def on_cmd(self):
+        '''general iperf cmd string from setting'''
+        pass

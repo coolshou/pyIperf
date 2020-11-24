@@ -898,6 +898,7 @@ class IperfClient(QObject):
         unit_windowsize = ds.get("unit_windowsize")
         fmtreport = ds.get("fmtreport")
         omit = ds.get("omit")
+        self._opt["conTimeout"] = ds.get("conTimeout", 5000)
 
         self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
                      '-p', "%s" % (self.port), '-i', '%s' % interval]
