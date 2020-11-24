@@ -645,9 +645,9 @@ class Iperf(QObject):
             if data.count("[") == 1:
                 # --bidir mode
                 # [TX-C]   0.00-10.26  sec  73.7 MBytes  60.3 Mbits/sec                  receiver
-                key = data[1:5]
+                key = data[1:3]
                 ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
-                self._result["SUM_%s" % key] = round(float(ds[3]), 2)
+                self._result["%s" % key] = round(float(ds[3]), 2)
             else:
                 # Tx or Rx only
                 #    0.00-10.00  sec   101 MBytes  85.1 Mbits/sec                  receiver
