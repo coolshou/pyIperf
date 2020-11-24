@@ -552,7 +552,16 @@ class Iperf(QObject):
                         else:
                             # should be Rx
                             curDirection = "Rx"
-                # TODO: iperf3 : curDirection is wrong!!
+                elif self.iperfver == 3:
+                    # TODO: iperf3 : curDirection is wrong!!
+                    if "Reverse mode" in data:
+                        curDirection = "Rx"
+                    if data.count("[") == 1:
+                        # --bidir
+                        if "RX" in data:
+                            curDirection = "Rx"
+                        if "TX" in data:
+                            curDirection = "Tx"
                 ndata = "%s %s" % (curDirection, data)
                 if "SUM" != iPall:
                     # just notice result when iperf is running for later User
