@@ -634,11 +634,20 @@ class Iperf(QObject):
             pass
         elif "receiver" in data:
             # ds = re.findall("\d+\.\d+", data)  # float only!
-            ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
-            self._result[iPall] = round(float(ds[3]), 2)
-            if self._tcp == IPERFprotocal.get("UDP"):
-                # TODO --bidir
-                self._per = round(float(ds[7]), 2)
+            if data.count("[") == 2:
+                # --bidir mode
+                # [SUM][TX-C]   0.00-10.26  sec  73.7 MBytes  60.3 Mbits/sec                  receiver
+                key = data.split("]")[1][1:]
+                ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
+                self._result["SUM_%s" % key] = round(float(ds[3]), 2)
+            else:
+                # Tx or Rx only
+                # [SUM]   0.00-10.00  sec   101 MBytes  85.1 Mbits/sec                  receiver
+                ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
+                self._result[iPall] = round(float(ds[3]), 2)
+                if self._tcp == IPERFprotocal.get("UDP"):
+                    # TODO --bidir
+                    self._per = round(float(ds[7]), 2)
         else:
             # every line of data
             self.sig_data.emit(tID, iPall, data)
