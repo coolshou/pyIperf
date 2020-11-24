@@ -553,11 +553,11 @@ class Iperf(QObject):
                             # should be Rx
                             curDirection = "Rx"
 
-                data = "%s %s" % (curDirection, data)
+                ndata = "%s %s" % (curDirection, data)
                 if "SUM" != iPall:
                     # just notice result when iperf is running for later User
                     # eg: throughput chart
-                    self.signal_result.emit(tID, int(iPall), data)
+                    self.signal_result.emit(tID, int(iPall), ndata)
                 if self._parallel > 1:
                     # TODO: handle each pair of data
                     if "SUM" == iPall:
@@ -633,7 +633,6 @@ class Iperf(QObject):
         elif "sender" in data:
             pass
         elif "receiver" in data:
-            # ds = re.findall("\d+\.\d+", data)  # float only!
             if data.count("[") == 2:
                 # --bidir mode
                 # [SUM][TX-C]   0.00-10.26  sec  73.7 MBytes  60.3 Mbits/sec                  receiver
