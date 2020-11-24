@@ -485,18 +485,18 @@ class Iperf(QObject):
                                     self.signal_finished.emit(0,
                                                               "program exit(%s)" % rc)
                             if self.stoped:
-                                self.signal_finished.emit(1, "set stop!!")
+                                self.signal_finished.emit(1, "set stop!!%s" % tID)
                                 break
                     else:
                         QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                         if self.stoped:
-                            self.signal_finished.emit(1, "set stop!!")
+                            self.signal_finished.emit(2, "set stop!!%s" % tID)
                             break
                         pass
                 else:
                     QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
                     if self.stoped:
-                        self.signal_finished.emit(1, "set stop!!")
+                        self.signal_finished.emit(3, "set stop!!%s" % tID)
                         break
                     self.log('0', "wait for command!!")
                     continue
@@ -788,9 +788,6 @@ class IperfClient(QObject):
                  iRow=0, iCol=0, iperfver=3, parent=None):
         super(IperfClient, self).__init__(parent)
         self._DEBUG = 2
-        # super(IperfClient, self).__init__(port,
-        #                                   iperfver=iperfver,
-        #                                   parent=parent)
         self._opt = {}
         # index for report ?
         self._opt["row"] = iRow
@@ -812,6 +809,7 @@ class IperfClient(QObject):
         self._o["Iperf"].signal_finished.connect(self._on_finished)
         self._o["Iperf"].sig_data.connect(self._on_date)
         # most place there
+        self.args = args
         self._parser_args(args)
 
         # self._o["iThread"] = IperfThread()
@@ -858,6 +856,11 @@ class IperfClient(QObject):
                 self._o["iThread"].quit()
                 self._o["iThread"].wait()
         self.signal_finished.emit(iCode, msg)
+
+    def set_reverse(self, reverse):
+        if reverse:
+            # iperf v2.0.12 Linux not support this
+            self.sCmd.append("-R")
 
     def _parser_args(self, args):
         '''after setting client cmd, the iperf will start running'''
@@ -917,9 +920,8 @@ class IperfClient(QObject):
             self._o["Iperf"].set_parallel(parallel)
 
         # run in reverse mode (server sends, client receives)
-        if reverse == 1:
-            # iperf v2.0.12 Linux not support this
-            self.sCmd.append("-R")
+        self.set_reverse(reverse)
+
         if tradeoff == 1:
             # this will cause iperf2.0.5 server terminal when finish test!!
             self.sCmd.append("--tradeoff")  # --tradeoff
