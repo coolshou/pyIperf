@@ -552,7 +552,7 @@ class Iperf(QObject):
                         else:
                             # should be Rx
                             curDirection = "Rx"
-
+                # TODO: iperf3 : curDirection is wrong!!
                 ndata = "%s %s" % (curDirection, data)
                 if "SUM" != iPall:
                     # just notice result when iperf is running for later User
@@ -571,7 +571,7 @@ class Iperf(QObject):
                 elif self.iperfver == 2:
                     # TODO: error data:
                     # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
-                    self._parser_dataline2(iPall, tID, data)
+                    self._parser_dataline2(iPall, tID, ndata)
                 else:
                     self.log("TODO(iperf v%s)line: %s" % (self.iperfver, line))
         elif ("failed" in line) or ("error" in line):
@@ -633,15 +633,15 @@ class Iperf(QObject):
         elif "sender" in data:
             pass
         elif "receiver" in data:
-            if data.count("[") == 2:
+            if data.count("[") == 1:
                 # --bidir mode
-                # [SUM][TX-C]   0.00-10.26  sec  73.7 MBytes  60.3 Mbits/sec                  receiver
-                key = data.split("]")[1][1:]
+                # [TX-C]   0.00-10.26  sec  73.7 MBytes  60.3 Mbits/sec                  receiver
+                key = data[1:4].split()
                 ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
                 self._result["SUM_%s" % key] = round(float(ds[3]), 2)
             else:
                 # Tx or Rx only
-                # [SUM]   0.00-10.00  sec   101 MBytes  85.1 Mbits/sec                  receiver
+                #    0.00-10.00  sec   101 MBytes  85.1 Mbits/sec                  receiver
                 ds = re.findall(r"[-+]?\d*\.\d+|\d+", data)  # float & int
                 self._result[iPall] = round(float(ds[3]), 2)
                 if self._tcp == IPERFprotocal.get("UDP"):
