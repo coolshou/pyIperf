@@ -833,7 +833,8 @@ class IperfClient(QObject):
         self._o["iThread"] = QThread()
         self._o["Iperf"].moveToThread(self._o["iThread"])
         self._o["iThread"].started.connect(self._o["Iperf"].task)
-        self._o["iThread"].start()
+        self._o["iThread"].finished.connect(self._o["iThread"].deleteLater)
+        # self._o["iThread"].start()
 
     def get_cmd(self):
         '''get cmd '''
@@ -900,133 +901,137 @@ class IperfClient(QObject):
 
         self.server = ds.get("server")
         bind_client = ds.get("client", "")
-        protocal = ds.get("protocal")
+        protocal = ds.get("protocal", 0)
         self._o["Iperf"].set_protocal(protocal)
-        duration = ds.get("duration")
-        parallel = ds.get("parallel")
-        interval = ds.get("interval")
-        reverse = ds.get("reverse")
-        bidir = ds.get("bidir")  # bi-direction
-        OldIperf3 = ds.get("OldIperf3")  # OldIperf3 which not support --bidir
+        duration = ds.get("duration", 10)
+        parallel = ds.get("parallel", 1)
+        interval = ds.get("interval", 1)
+        reverse = ds.get("reverse", 0)
+        bidir = ds.get("bidir", 0)  # bi-direction
+        OldIperf3 = ds.get("OldIperf3", 0)  # OldIperf3 which not support --bidir
         tradeoff = ds.get("tradeoff", 0)
-        bitrate = ds.get("bitrate")
+        bitrate = ds.get("bitrate", 0)
         unit_bitrate = ds.get("unit_bitrate")
-        windowsize = ds.get("windowsize")
+        windowsize = ds.get("windowsize", 0)
         unit_windowsize = ds.get("unit_windowsize")
-        fmtreport = ds.get("fmtreport")
-        omit = ds.get("omit")
+        fmtreport = ds.get("fmtreport", "m")
+        omit = ds.get("omit", 0)
         self._opt["conTimeout"] = ds.get("conTimeout", 5000)
 
-        self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
-                     '-p', "%s" % (self.port), '-i', '%s' % interval]
-        if bind_client:
-            self.sCmd.append("-B")
-            self.sCmd.append("%s" % bind_client)
-        if protocal == 0:
-            pass
-        else:
-            self.sCmd.append("-u")
-
-        if duration > 0:
-            self.sCmd.append("-t")
-            self.sCmd.append("%s" % duration)
-            self._o["Iperf"].set_duration(duration)
-
-        if parallel > 1:
-            self.sCmd.append("-P")
-            self.sCmd.append("%s" % parallel)
-            self._o["Iperf"].set_parallel(parallel)
-
-        # run in reverse mode (server sends, client receives)
-        self.set_reverse(reverse)
-
-        if tradeoff == 1:
-            # this will cause iperf2.0.5 server terminal when finish test!!
-            self.sCmd.append("--tradeoff")  # --tradeoff
-            self._o["Iperf"].set_tradeoff(tradeoff)
-        else:
-            if bidir == 1:
-                if self._opt["version"] == 3:
-                    if not OldIperf3:
-                        self.sCmd.append("--bidir")
-                    else:
-                        print("Not support --bidir on old iperf3 (<3.7)")
-                else:
-                    self.sCmd.append("-d")  # --dualtest
-
-        if bitrate > 0:
-            self.sCmd.append("-b")
-            self.sCmd.append("%s%s" % (bitrate, unit_bitrate))
-        #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
-
-        if windowsize > 0:
-            # https://segmentfault.com/a/1190000000473365
-            # Linux Max = 425984 = 212992 * 2
-            # cat /proc/sys/net/core/rmem_max
-            # cat /proc/sys/net/core/rmem_default
-            # cat /proc/sys/net/core/wmem_max
-            # cat /proc/sys/net/core/wmem_default
-            # cat /proc/sys/net/ipv4/tcp_window_scaling
-            # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
-            # #read
-            # sysctl -w net.core.rmem_max=N
-            # sysctl -w net.core.rmem_default=N
-
-            # #write
-            # sysctl -w net.core.wmem_max=N
-            # sysctl -w net.core.wmem_default=N
-            # #apply swtting
-            #  sysctl -p
-            # FIX setting
-            # /etc/sysctl.conf
-            # net.core.rmem_default=262144
-            # net.core.wmem_default=262144
-            # net.core.rmem_max=262144
-            # net.core.wmem_max=262144
-
-            if windowsize > 425984:
-                self.log("0", "Max window size is %s" % 425984)
-                windowsize = 425984
-            self.sCmd.append("-w")
-            if unit_windowsize not in ["K", "M", "G"]:
-                windowsize = "%sK" % windowsize
+        if self.server:
+            self.sCmd = [self._o["Iperf"].iperf, '-c', self.server,
+                         '-p', "%s" % (self.port), '-i', '%s' % interval]
+            if bind_client:
+                self.sCmd.append("-B")
+                self.sCmd.append("%s" % bind_client)
+            if protocal == 0:
+                pass
             else:
-                windowsize = "%s%s" % (windowsize, unit_windowsize)
-            self.sCmd.append("%s" % windowsize)
+                self.sCmd.append("-u")
 
-        if omit > 0:
+            if duration > 0:
+                self.sCmd.append("-t")
+                self.sCmd.append("%s" % duration)
+                self._o["Iperf"].set_duration(duration)
+
+            if parallel > 1:
+                self.sCmd.append("-P")
+                self.sCmd.append("%s" % parallel)
+                self._o["Iperf"].set_parallel(parallel)
+
+            # run in reverse mode (server sends, client receives)
+            self.set_reverse(reverse)
+
+            if tradeoff == 1:
+                # this will cause iperf2.0.5 server terminal when finish test!!
+                self.sCmd.append("--tradeoff")  # --tradeoff
+                self._o["Iperf"].set_tradeoff(tradeoff)
+            else:
+                if bidir == 1:
+                    if self._opt["version"] == 3:
+                        if not OldIperf3:
+                            self.sCmd.append("--bidir")
+                        else:
+                            print("Not support --bidir on old iperf3 (<3.7)")
+                    else:
+                        self.sCmd.append("-d")  # --dualtest
+
+            if bitrate > 0:
+                self.sCmd.append("-b")
+                self.sCmd.append("%s%s" % (bitrate, unit_bitrate))
+            #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
+
+            if windowsize > 0:
+                # https://segmentfault.com/a/1190000000473365
+                # Linux Max = 425984 = 212992 * 2
+                # cat /proc/sys/net/core/rmem_max
+                # cat /proc/sys/net/core/rmem_default
+                # cat /proc/sys/net/core/wmem_max
+                # cat /proc/sys/net/core/wmem_default
+                # cat /proc/sys/net/ipv4/tcp_window_scaling
+                # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
+                # #read
+                # sysctl -w net.core.rmem_max=N
+                # sysctl -w net.core.rmem_default=N
+
+                # #write
+                # sysctl -w net.core.wmem_max=N
+                # sysctl -w net.core.wmem_default=N
+                # #apply swtting
+                #  sysctl -p
+                # FIX setting
+                # /etc/sysctl.conf
+                # net.core.rmem_default=262144
+                # net.core.wmem_default=262144
+                # net.core.rmem_max=262144
+                # net.core.wmem_max=262144
+
+                if windowsize > 425984:
+                    self.log("0", "Max window size is %s" % 425984)
+                    windowsize = 425984
+                self.sCmd.append("-w")
+                if unit_windowsize not in ["K", "M", "G"]:
+                    windowsize = "%sK" % windowsize
+                else:
+                    windowsize = "%s%s" % (windowsize, unit_windowsize)
+                self.sCmd.append("%s" % windowsize)
+
+            if omit > 0:
+                if self._opt["version"] == 3:
+                    self.sCmd.append("-O")
+                    self.sCmd.append("%s" % omit)
+
+            if fmtreport:
+                self.sCmd.append("-f")
+                self.sCmd.append(fmtreport)
+
+            # --logfile f: log output to file
             if self._opt["version"] == 3:
-                self.sCmd.append("-O")
-                self.sCmd.append("%s" % omit)
+                # --connect-timeout ms
+                self.sCmd.append("--connect-timeout")
+                self.sCmd.append('%s' % self._opt["conTimeout"])
+                # force flush output
+                self.sCmd.append("--forceflush")
 
-        if fmtreport:
-            self.sCmd.append("-f")
-            self.sCmd.append(fmtreport)
+            # TODO:  -l, --len #[KMG]
+            # length of buffer to read or write
+            # (default 128 KB for TCP, 8 KB for UDP)
 
-        # --logfile f: log output to file
-        if self._opt["version"] == 3:
-            # --connect-timeout ms
-            self.sCmd.append("--connect-timeout")
-            self.sCmd.append('%s' % self._opt["conTimeout"])
-            # force flush output
-            self.sCmd.append("--forceflush")
+            # TODO: -M, --set-mss
+            # # set TCP/SCTP maximum segment size (MTU - 40 bytes)
+            # if iMTU:
+            #     self.sCmd.append('-M')
+            #     self.sCmd.append(str(iMTU))
 
-        # TODO:  -l, --len #[KMG]
-        # length of buffer to read or write
-        # (default 128 KB for TCP, 8 KB for UDP)
-
-        # TODO: -M, --set-mss
-        # # set TCP/SCTP maximum segment size (MTU - 40 bytes)
-        # if iMTU:
-        #     self.sCmd.append('-M')
-        #     self.sCmd.append(str(iMTU))
-
-        # TODO: -4, --version4            only use IPv4
-        # TODO: -6, --version6            only use IPv6
-
-        self.log("_parser_args", "%s" % " ".join(self.sCmd))
+            # TODO: -4, --version4            only use IPv4
+            # TODO: -6, --version6            only use IPv6
+            print("cmd: %s" % self.sCmd)
+            self.log("_parser_args", "%s" % " ".join(self.sCmd))
+        else:
+            self.log("_parser_args", "ERROR: No target server in setting!!")
 
     def start(self):
+        self._o["iThread"].start()
         if len(self.sCmd) <= 0:
             self.error("-1", "Not iperf cmd")
             return -1
@@ -1074,4 +1079,6 @@ class IperfClient(QObject):
 
     def log(self, mType, msg, level=1):
         if self._DEBUG > level:
-            self.signal_debug.emit(self.__class__.__name__, msg)
+            m = "%s-%s" % (mType, msg)
+            print(m)
+            self.signal_debug.emit(self.__class__.__name__, m)
