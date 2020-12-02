@@ -1076,6 +1076,18 @@ class IperfClient(QObject):
     def stop(self):
         if self._o["Iperf"]:
             self._o["Iperf"].do_stop()
+            # wait thread stop
+            iWait = 15
+            while self._o["iThread"].isRunning():
+                QCoreApplication().processEvents()
+                time.sleep(1)
+                if iWait > 0:
+                    iWait = iWait -1
+                else:
+                    # TODO: check force QThread to terminate
+                    self._o["iThread"].terminate()
+                    #self._o["iThread"].wait()
+                    break
 
     def log(self, mType, msg, level=1):
         if self._DEBUG > level:
