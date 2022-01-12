@@ -215,7 +215,7 @@ DEFAULT_IPERF2_PORT = 5001
 
 
 class Iperf(QObject):
-    '''python of iperf2/iperf3 class'''
+    '''manager class to control iperf2/iperf3 running'''
     __VERSION__ = '20201123'
 
     # thread id, iParallel, data
@@ -421,7 +421,7 @@ class Iperf(QObject):
         while not self.exiting:
             try:
                 while len(self.sCmd) <= 0:
-                    QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                    QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                     self.log("0", "wait sCmd", 4)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
@@ -458,7 +458,7 @@ class Iperf(QObject):
                             if self.stoped:
                                 self.signal_finished.emit(1, "set stop!!")
                                 break
-                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
@@ -474,7 +474,7 @@ class Iperf(QObject):
                             return -1
 
                         for line in iter(self.child.stdout.readline, b''):
-                            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                             rs = line.rstrip().decode("utf-8")
                             if rs:
                                 # output result
@@ -488,13 +488,13 @@ class Iperf(QObject):
                                 self.signal_finished.emit(1, "set stop!!%s" % tID)
                                 break
                     else:
-                        QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                        QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                         if self.stoped:
                             self.signal_finished.emit(2, "set stop!!%s" % tID)
                             break
                         pass
                 else:
-                    QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+                    QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                     if self.stoped:
                         self.signal_finished.emit(3, "set stop!!%s" % tID)
                         break
@@ -512,7 +512,7 @@ class Iperf(QObject):
             if self.stoped:
                 self.signal_finished.emit(1, "signal_finished!!")
                 break
-            QCoreApplication.processEvents(QEventLoop.AllEvents, 0.5)
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
         self.log(0, "task end!!", 4)
         self.signal_finished.emit(1, "task end!!")
 
@@ -520,7 +520,7 @@ class Iperf(QObject):
         '''handle data output from iperf'''
         curDirection = "Tx"
         detail = line.strip()
-        if len(detail)>0:
+        if len(detail) > 0:
             # recore every line except empty line
             self._detail.append(detail)
         if ("[" in line) and ("]" in line):
@@ -625,7 +625,7 @@ class Iperf(QObject):
                 self.log(tID, "_result[%s]:%s" % (iPall, self._result[iPall]))
                 time.sleep(3)
                 if self._tradeoff:
-                    self._tradeoffCount = self._tradeoffCount+1
+                    self._tradeoffCount = self._tradeoffCount + 1
                     if self._tradeoffCount >= 2:
                         self.do_stop()
                 else:
@@ -791,6 +791,8 @@ class IperfServer(QObject):
 
 
 class IperfClient(QObject):
+    """ A network testing client that will start an iperf2/3 in QThread
+    which will connect to specify iperf2/3 server."""
     # row, col, thread, iParallel, data
     signal_result = pyqtSignal(int, int, int, int, str)
     signal_finished = pyqtSignal(int, str)
@@ -1079,14 +1081,14 @@ class IperfClient(QObject):
             # wait thread stop
             iWait = 15
             while self._o["iThread"].isRunning():
-                QCoreApplication().processEvents()
+                QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                 time.sleep(1)
                 if iWait > 0:
-                    iWait = iWait -1
+                    iWait = iWait - 1
                 else:
                     # TODO: check force QThread to terminate
                     self._o["iThread"].terminate()
-                    #self._o["iThread"].wait()
+                    # self._o["iThread"].wait()
                     break
 
     def log(self, mType, msg, level=1):
