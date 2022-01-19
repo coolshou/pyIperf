@@ -238,14 +238,11 @@ class Iperf(QObject):
         else:
             # we are running in a normal Python environment
             self._basedir = os.path.dirname(__file__)
-
         # iperf binary
         if platform.machine() in ['i386', 'i486', 'i586', 'i686']:
             arch = 'x86'
         else:
             arch = platform.machine()
-
-        # print("iperf: %s" % iperfver)
         self.iperfver = iperfver
         if self.iperfver == 3:
             iperfname = "iperf3"
@@ -255,20 +252,15 @@ class Iperf(QObject):
         self.iperf = os.path.join(self._basedir, 'bin', platform.system())
         if platform.system() == 'Linux':
             self.iperf = os.path.join(self.iperf, arch, '%s' % iperfname)
-        if platform.system() == 'Windows':
+        elif platform.system() == 'Windows':
             self.iperf = os.path.join(self.iperf, arch, '%s.exe' % iperfname)
-            # self.iperf = self.iperf + '.exe'
+        else:
+            self.log("WARNING", "Not support platform :%s" % platform.system())
 
-        # print("use iperf: %s" % self.iperf)
-        # if host:
-        #     self.host = host
         self.port = port
         self._tcp = IPERFprotocal.get("TCP")  # 0: TCP, 1: UDP,...
 
-        # self.mutex = QMutex()
-        # self.mutex.lock()
         self.stoped = False  # user stop
-        # self.mutex.unlock()
         self.sCmd = []
 
         self._parallel = 1  # for report result use
@@ -277,14 +269,15 @@ class Iperf(QObject):
         self._tradeoff = False
         self._tradeoffCount = 0
         # store result
-        # self._result = "0"  # store final sum
         self._result = {}  # store final in dict format
         self._resultunit = ""  # store final sum unit
         self._detail = []  # store every line of data
         self.child = None  # subprocress of iperf
         '''store iperf UDP packet error rate (PER) result'''
         # self._per = ""
-        self._per = {}
+        self._lost = {}  # udp lost packet
+        self._total = {}  # udp total packet
+        self._per = {}   # udp pcaket lost rate %
 
     def set_protocal(self, protocal):
         '''set iperf run protocal: 0: TCP, 1: UDP'''
@@ -366,6 +359,11 @@ class Iperf(QObject):
         '''get store iperf UDP packet error rate (PER) result'''
         # return str(self._per)
         return self._per
+
+    def get_per_detail(self):
+        '''get store iperf UDP lost/total/packet error rate (PER) result'''
+        # return str(self._per)
+        return self._lost, self._total, self._per
 
     def get_result(self):
         '''get store iperf average result in dict'''
@@ -582,7 +580,7 @@ class Iperf(QObject):
                     # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
                     self._parser_dataline2(iPall, tID, ndata)
                 else:
-                    self.log("TODO(iperf v%s)line: %s" % (self.iperfver, line))
+                    self.log(tID, "TODO(iperf v%s)line: %s" % (self.iperfver, line))
         elif ("failed" in line) or ("error" in line):
             # something wrong!
             self.log(tID, "error handle: %s" % line)
@@ -655,7 +653,13 @@ class Iperf(QObject):
                 self._result[iPall] = round(float(ds[3]), 2)
                 if self._tcp == IPERFprotocal.get("UDP"):
                     # TODO --bidir
-                    self._per = round(float(ds[7]), 2)
+                    #print("ds: %s" % (ds,))
+                    try:
+                        self._lost = int(ds[5])
+                        self._total = int(ds[6])
+                        self._per = round(float(ds[7]), 5)
+                    except Exception as err:
+                        self.log("0", "ERROR: %s" % err)
         else:
             # every line of data
             self.sig_data.emit(tID, iPall, data)
@@ -675,8 +679,10 @@ class Iperf(QObject):
             self.traceback("kill_proc")
             pass
 
-    # def log(self, mType, msg, level=logging.INFO):
     def log(self, mType, msg, level=1):
+        # mType: message type,
+        # msg : message to log
+        # level : debug level
         '''logging.INFO = 20'''
         if self._DEBUG > level:
             # print("Iperf log: (%s) %s" % (mType, msg))
@@ -1027,8 +1033,9 @@ class IperfClient(QObject):
 
             # TODO: -4, --version4            only use IPv4
             # TODO: -6, --version6            only use IPv6
-            print("cmd: %s" % self.sCmd)
-            self.log("_parser_args", "%s" % " ".join(self.sCmd))
+            scmd = " ".join(self.sCmd)
+            #print("cmd: %s" % scmd)
+            self.log("_parser_args", "%s" % scmd)
         else:
             self.log("_parser_args", "ERROR: No target server in setting!!")
 
@@ -1055,6 +1062,15 @@ class IperfClient(QObject):
         rc = self._o["Iperf"].get_packeterrorrate()
         # self.log("get_packeterrorrate",  "%s" % rc)
         return rc
+
+    def get_per_detail(self):
+        '''get store iperf UDP packet error rate (PER) detail result'''
+        # return lost/total/Packet error rate
+        rc = self._o["Iperf"].get_per_detail()
+        if len(rc) >= 3:
+            return rc[0], rc[1], rc[2]
+        else:
+            return "error get_per_detail: %s" % (rc,), "", ""
 
     def get_result(self):
         '''get store iperf average result'''
