@@ -12,6 +12,7 @@ import csv
 import os
 import time
 import datetime
+import signal
 from enum import Enum
 try:
     from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
@@ -344,7 +345,7 @@ class MainWindow(QMainWindow):
     def updateData(self, row, col, val):
         '''update throughput value to tableResult '''
         # print("%s , %s - %s" % (row, col, val))
-        self.tableResult.setRowCount(row+1)
+        self.tableResult.setRowCount(row + 1)
         self.tableResult.setItem(row, col, QTableWidgetItem(val))
         itm = self.tableResult.item(row, col)
         if itm:
@@ -358,7 +359,7 @@ class MainWindow(QMainWindow):
         if self.rbIperf3.isChecked():
             # iperf v3 format
             if ((("sender" in msg) and (iCol == columnResult.colTx.value)) or
-                (('receiver' in msg) and (iCol == columnResult.colRx.value))):
+                    (('receiver' in msg) and (iCol == columnResult.colRx.value))):
                 print("parserReult iType: %s" % iType)
                 rs = IperfResult(iType, msg)
                 self.logToFile("%s %s" % (rs.throughput, rs.throughputUnit))
@@ -458,7 +459,7 @@ class MainWindow(QMainWindow):
         sFormat = self.comboBoxFormat.currentText()
         # print("sbPort: %s" % port)
         duration = self.sbDuration.value()
-        self.progressBar.setMaximum(duration+3)
+        self.progressBar.setMaximum(duration + 3)
         # print("sbDuration: %s" % duration)
         parallel = self.spParallel.value()
         # print("spParallel: %s" % parallel)
@@ -625,7 +626,7 @@ class MainWindow(QMainWindow):
 
     def saveResult(self):
         filename, ext = QFileDialog.getSaveFileName(
-                    self, 'Save File', '', 'CSV(*.csv)')
+            self, 'Save File', '', 'CSV(*.csv)')
         if filename:
             if not QFileInfo(filename).suffix():
                 filename += ".csv"
@@ -683,10 +684,36 @@ class MainWindow(QMainWindow):
                                                        exc_obj, lineno))
 
 
+class MyApp(QApplication):
+    """wrapper to the QApplication """
+
+    def __init__(self, argv=None):
+        super(MyApp, self).__init__(argv)
+
+    def event(self, event_):
+        """handle event """
+        return QApplication.event(self, event_)
+
+
+def signal_handler(signal_, frame):
+    """signal handler"""
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
+
+
+def sig_segv(signum, frame):
+    print("segfault: %s" % frame)
+
+
 # main
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-
+    app = MyApp(sys.argv)
+    # Connect your cleanup function to signal.SIGINT
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGSEGV, sig_segv)
+    # And start a timer to call Application.event repeatedly.
+    # You can change the timer parameter as you like.
+    app.startTimer(200)
     app.setOrganizationName("coolshou")
     app.setOrganizationDomain("coolshou.idv.tw")
     app.setApplicationName("qperf")
