@@ -461,7 +461,6 @@ class Iperf(QObject):
                         # PIPE is not working!!, iperf3 will buffer it
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = subprocess.Popen(self.sCmd, shell=False,
-                                                      bufsize=1,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
