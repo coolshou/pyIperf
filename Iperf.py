@@ -584,8 +584,9 @@ class Iperf(QObject):
             self.signal_finished.emit(0, eMsg)
             self.do_stop()
         elif "iperf Down." in rs:
+            # iperf3 finish running
             self.signal_finished.emit(0, "iperf Down")
-            self.do_stop()
+            # self.do_stop()
         else:
             self.log("IGNORE: %s" % (line))
             pass
