@@ -444,10 +444,6 @@ class Iperf(QObject):
                             if rs:
                                 # output result
                                 self._handel_dataline(tID, rs)
-                                if "iperf Down." in rs:
-                                    self.signal_finished.emit(0,
-                                                              "iperf Down")
-                                    break
                             else:
                                 rc = self.child.poll()
                                 if rc is not None:
@@ -583,11 +579,15 @@ class Iperf(QObject):
                     self.log(tID, "TODO(iperf v%s)line: %s" % (self.iperfver, line))
         elif ("failed" in line) or ("error" in line):
             # something wrong!
-            self.log(tID, "error handle: %s" % line)
+            eMsg = "error handle: %s" % line
+            self.log(tID, eMsg)
+            self.signal_finished.emit(0, eMsg)
             self.do_stop()
-            pass
+        elif "iperf Down." in rs:
+            self.signal_finished.emit(0, "iperf Down")
+            self.do_stop()
         else:
-            # print("IGNORE: %s" % (line))
+            self.log("IGNORE: %s" % (line))
             pass
 
     def _parser_dataline2(self, iPall, tID, data):
