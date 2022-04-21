@@ -450,6 +450,7 @@ class Iperf(QObject):
                             else:
                                 rc = self.child.poll()
                                 if rc is not None:
+                                    self.log("iperf returncode: %s" % self.child.returncode)
                                     self.signal_finished.emit(0,
                                                               "program exit(%s)" % rc)
                             if self.stoped:
@@ -481,6 +482,7 @@ class Iperf(QObject):
                             else:
                                 rc = self.child.poll()
                                 if rc is not None:
+                                    self.log("iperf returncode: %s" % self.child.returncode)
                                     self.signal_finished.emit(0,
                                                               "program exit(%s)" % rc)
                             if self.stoped:
