@@ -363,7 +363,7 @@ class Iperf(QObject):
     def get_per_detail(self):
         '''get store iperf UDP lost/total/packet error rate (PER) result'''
         # return str(self._per)
-        return self._lost, self._total, self._per
+        return self._lost, self._total, self._per, self._result
 
     def get_result(self):
         '''get store iperf average result in dict'''
