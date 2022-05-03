@@ -581,7 +581,7 @@ class Iperf(QObject):
                     self._parser_dataline3(iPall, tID, data)
                 elif self.iperfver == 2:
                     # TODO: error data:
-                    # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
+                    # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
                     self._parser_dataline2(iPall, tID, ndata)
                 else:
                     self.log(tID, "TODO(iperf v%s)line: %s" % (self.iperfver, line))
@@ -658,7 +658,7 @@ class Iperf(QObject):
                 self._result[iPall] = round(float(ds[3]), 2)
                 if self._tcp == IPERFprotocal.get("UDP"):
                     # TODO --bidir
-                    #print("ds: %s" % (ds,))
+                    print("UDP ds: %s (%s)" % (ds, data))
                     try:
                         self._lost = int(ds[5])
                         self._total = int(ds[6])
