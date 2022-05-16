@@ -157,7 +157,8 @@ class IperfClientTest(unittest.TestCase):
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         'server':'192.168.1.1', 'protocal': %s, 'duration':5, \
         'parallel':0, 'reverse':0, 'bidir':1, 'tradeoff':0, 'bitrate':0, \
-        'windowsize':-1, 'omit':2, \
+        'windowsize':0, 'unit_windowsize':'M', 'dscp':0, 'maximum_segment_size':8000, \
+        'omit':2, \
         'fmtreport':'m', 'version':2}" % (IPERFprotocal.get("TCP"))
         ipc = self.run_iperf(ds, 5001, 2)
         rs = ipc.get_result()
@@ -200,7 +201,8 @@ class IperfClientTest(unittest.TestCase):
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         'server':'192.168.1.1', 'protocal':0, 'duration':10, \
         'parallel':0, 'reverse':0, 'bidir':0, 'bitrate':0, \
-        'windowsize':-1, 'omit':2, \
+        'windowsize':0, 'unit_windowsize':'M', 'dscp':0, 'maximum_segment_size':8000, \
+        'omit':2, \
         'fmtreport':'m', 'version':3}"
         ipc = self.run_iperf(ds)
         rs = ipc.get_result()
@@ -212,7 +214,8 @@ class IperfClientTest(unittest.TestCase):
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
         'server':'192.168.1.1', 'protocal':0, 'duration':10, \
         'parallel':1, 'reverse':0, 'bidir':1, 'bitrate':0, \
-        'windowsize':-1, 'omit':2, \
+        'windowsize':0, 'unit_windowsize':'M', 'dscp':0, 'maximum_segment_size':8000, \
+        'omit':2, \
         'fmtreport':'m'}"
         ipc = self.run_iperf(ds)
         rs = ipc.get_result()

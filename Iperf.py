@@ -922,6 +922,8 @@ class IperfClient(QObject):
         unit_bitrate = ds.get("unit_bitrate")
         windowsize = ds.get("windowsize", 0)
         unit_windowsize = ds.get("unit_windowsize")
+        dscp = ds.get("dscp", None)
+        maximum_segment_size = ds.get("maximum_segment_size", None)
         fmtreport = ds.get("fmtreport", "m")
         omit = ds.get("omit", 0)
         self._opt["conTimeout"] = ds.get("conTimeout", 5000)
@@ -1003,6 +1005,11 @@ class IperfClient(QObject):
                 else:
                     windowsize = "%s%s" % (windowsize, unit_windowsize)
                 self.sCmd.append("%s" % windowsize)
+
+            if dscp is not None:
+                self.sCmd.append("--dscp %s" % dscp)
+            if maximum_segment_size is not None:
+                self.sCmd.append("--set-mss %s" % maximum_segment_size)
 
             if omit > 0:
                 if self._opt["version"] == 3:
