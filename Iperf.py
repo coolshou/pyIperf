@@ -593,7 +593,7 @@ class Iperf(QObject):
             self.signal_finished.emit(0, eMsg)
             self.do_stop()
         else:
-            self.log("IGNORE: %s" % (line))
+            self.log(tID, "IGNORE: %s" % (line))
             pass
 
     def _parser_dataline2(self, iPall, tID, data):
