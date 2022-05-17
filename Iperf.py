@@ -463,6 +463,7 @@ class Iperf(QObject):
                         os.environ["PYTHONUNBUFFERED"] = "1"
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = subprocess.Popen(self.sCmd, shell=False,
+                                                      bufsize=1,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
