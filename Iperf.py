@@ -460,7 +460,7 @@ class Iperf(QObject):
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
-                        os.environ["PYTHONUNBUFFERED"] = "1"
+                        #os.environ["PYTHONUNBUFFERED"] = "1"
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       bufsize=1,
