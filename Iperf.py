@@ -363,7 +363,7 @@ class Iperf(QObject):
     def get_per_detail(self):
         '''get store iperf UDP lost/total/packet error rate (PER) result'''
         # return str(self._per)
-        return self._lost, self._total, self._per
+        return self._lost, self._total, self._per, self._result
 
     def get_result(self):
         '''get store iperf average result in dict'''
@@ -445,12 +445,12 @@ class Iperf(QObject):
                                 # output result
                                 self._handel_dataline(tID, rs)
                                 if "iperf Down." in rs:
-                                    self.signal_finished.emit(0,
-                                                              "iperf Down")
-                                    break
+                                    # iperf3 finish running
+                                    self.signal_finished.emit(0, "iperf Down")
                             else:
                                 rc = self.child.poll()
                                 if rc is not None:
+                                    self.log("iperf returncode: %s" % self.child.returncode)
                                     self.signal_finished.emit(0,
                                                               "program exit(%s)" % rc)
                             if self.stoped:
@@ -460,9 +460,9 @@ class Iperf(QObject):
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
+                        os.environ["PYTHONUNBUFFERED"] = "1"
                         self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = subprocess.Popen(self.sCmd, shell=False,
-                                                      bufsize=1,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
@@ -477,9 +477,13 @@ class Iperf(QObject):
                             if rs:
                                 # output result
                                 self._handel_dataline(tID, rs)
+                                if "iperf Down." in rs:
+                                    # iperf3 finish running
+                                    self.signal_finished.emit(0, "iperf Down")
                             else:
                                 rc = self.child.poll()
                                 if rc is not None:
+                                    self.log("iperf returncode: %s" % self.child.returncode)
                                     self.signal_finished.emit(0,
                                                               "program exit(%s)" % rc)
                             if self.stoped:
@@ -577,17 +581,18 @@ class Iperf(QObject):
                     self._parser_dataline3(iPall, tID, data)
                 elif self.iperfver == 2:
                     # TODO: error data:
-                    # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
+                    # [SUM]  0.0-30.1 sec  0.00 (null)s  198999509338 Bytes/sec
                     self._parser_dataline2(iPall, tID, ndata)
                 else:
                     self.log(tID, "TODO(iperf v%s)line: %s" % (self.iperfver, line))
         elif ("failed" in line) or ("error" in line):
             # something wrong!
-            self.log(tID, "error handle: %s" % line)
+            eMsg = "error handle: %s" % line
+            self.log(tID, eMsg)
+            self.signal_finished.emit(0, eMsg)
             self.do_stop()
-            pass
         else:
-            # print("IGNORE: %s" % (line))
+            self.log("IGNORE: %s" % (line))
             pass
 
     def _parser_dataline2(self, iPall, tID, data):
@@ -653,7 +658,7 @@ class Iperf(QObject):
                 self._result[iPall] = round(float(ds[3]), 2)
                 if self._tcp == IPERFprotocal.get("UDP"):
                     # TODO --bidir
-                    #print("ds: %s" % (ds,))
+                    print("UDP ds: %s (%s)" % (ds, data))
                     try:
                         self._lost = int(ds[5])
                         self._total = int(ds[6])
