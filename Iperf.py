@@ -525,7 +525,11 @@ class Iperf(QObject):
         detail = line.strip()
         if len(detail) > 0:
             # recore every line except empty line
-            self._detail.append(detail)
+            if detail=="\r":
+                # do not record line contain only \r
+                pass
+            else:
+                self._detail.append(detail)
         if ("[" in line) and ("]" in line):
             # this suould be data we care
             if "local" in line:
