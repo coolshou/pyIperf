@@ -1015,6 +1015,8 @@ class IperfClient(QObject):
             if dscp >= 0:
                 self.sCmd.append("--dscp %s" % dscp)
             if maximum_segment_size > 0:
+                # set TCP/SCTP maximum segment size (MTU - 40 bytes)
+                # -M, , --set-mss
                 self.sCmd.append("--set-mss %s" % maximum_segment_size)
 
             if omit > 0:
@@ -1037,12 +1039,6 @@ class IperfClient(QObject):
             # TODO:  -l, --len #[KMG]
             # length of buffer to read or write
             # (default 128 KB for TCP, 8 KB for UDP)
-
-            # TODO: -M, --set-mss
-            # # set TCP/SCTP maximum segment size (MTU - 40 bytes)
-            # if iMTU:
-            #     self.sCmd.append('-M')
-            #     self.sCmd.append(str(iMTU))
 
             # TODO: -4, --version4            only use IPv4
             # TODO: -6, --version6            only use IPv6
@@ -1078,12 +1074,12 @@ class IperfClient(QObject):
 
     def get_per_detail(self):
         '''get store iperf UDP packet error rate (PER) detail result'''
-        # return lost/total/Packet error rate
+        # return lost/total/Packet error rate/throughput
         rc = self._o["Iperf"].get_per_detail()
-        if len(rc) >= 3:
-            return rc[0], rc[1], rc[2]
+        if len(rc) >= 4:
+            return rc[0], rc[1], rc[2], rc[3]
         else:
-            return "error get_per_detail: %s" % (rc,), "", ""
+            return "error get_per_detail: %s" % (rc,), "", "", ""
 
     def get_result(self):
         '''get store iperf average result'''
