@@ -268,6 +268,7 @@ class Iperf(QObject):
         # iperf2 -r, --tradeoff Do a bidirectional test individually
         self._tradeoff = False
         self._tradeoffCount = 0
+        self._bidir = False
         # store result
         self._result = {}  # store final in dict format
         self._resultunit = ""  # store final sum unit
@@ -278,6 +279,9 @@ class Iperf(QObject):
         self._lost = {}  # udp lost packet
         self._total = {}  # udp total packet
         self._per = {}   # udp pcaket lost rate %
+
+    def set_bidir(self, isBidir=True):
+        self._bidir = isBidir
 
     def set_protocal(self, protocal):
         '''set iperf run protocal: 0: TCP, 1: UDP'''
@@ -367,6 +371,12 @@ class Iperf(QObject):
 
     def get_result(self):
         '''get store iperf average result in dict'''
+        if self._bidir:
+            if len(self._result.keys())>1:
+                iSum = self._result.get("SUM")
+                if iSum is None:
+                    self._result["SUM"] = sum(self._result.values())
+                print("_result sum: %s, _result: %s" % (iSum, self._result))
         return self._result
 
     def get_resultunit(self):
@@ -543,7 +553,7 @@ class Iperf(QObject):
                     iPall = iPalls[0]
                 # print("iPall: %s (%s)" % (iPall, type(iPall)))
 
-                # result data
+                # result data = remove parallel index [xxx], [SUM]
                 data = line[5:].strip()
                 if self.iperfver == 2:
                     # iperf2: determine Tx or Rx
@@ -922,6 +932,8 @@ class IperfClient(QObject):
         interval = ds.get("interval", 1)
         reverse = ds.get("reverse", 0)
         bidir = ds.get("bidir", 0)  # bi-direction
+        if bidir==1:
+            self._o["Iperf"].set_bidir(True)
         OldIperf3 = ds.get("OldIperf3", 0)  # OldIperf3 which not support --bidir
         tradeoff = ds.get("tradeoff", 0)
         bitrate = ds.get("bitrate", 0)
