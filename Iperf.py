@@ -1027,9 +1027,11 @@ class IperfClient(QObject):
                 else:
                     windowsize = "%s%s" % (windowsize, unit_windowsize)
                 self.sCmd.append("%s" % windowsize)
+                
+            # TODO: how to set dscp value/format tos?
+            #if dscp >= 0:
+            #    self.sCmd.append("--dscp %s" % dscp)
 
-            if dscp >= 0:
-                self.sCmd.append("--dscp %s" % dscp)
             if maximum_segment_size > 0:
                 # set TCP/SCTP maximum segment size (MTU - 40 bytes)
                 # -M, , --set-mss
