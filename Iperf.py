@@ -26,9 +26,8 @@ try:
     from PyQt5.QtCore import (QCoreApplication, QThread, QEventLoop,
                               pyqtSlot, pyqtSignal, QObject)
     # from PyQt5.QtWidgets import (QApplication)
-except ImportError:
-    print("pip install PyQt5")
-    raise SystemExit
+except ImportError as err:
+    raise SystemExit("pip install PyQt5\n %s" % err)
 
 basedir = os.path.join(os.getcwd(), os.path.dirname(__file__))
 sys.path.append(os.path.join(basedir, "..", "..", "pyWAT"))
@@ -296,7 +295,7 @@ class Iperf(QObject):
         '''store out line by line in queue'''
         for line in iter(out.readline, b''):
             queue.put(line)
-        self.log("0", "enqueue_output: %s" % line)
+        self.log("enqueue_output", "enqueue_output: %s" % line)
 
     def execCmd(self, sCmd):
         '''exec sCmd and return subprocess.Popen'''
@@ -304,7 +303,7 @@ class Iperf(QObject):
         try:
             # cmd = "%s %s" % (self.cmd, "ei")
             cmd = sCmd
-            self.log("0", "exec cmd: %s" % cmd)
+            self.log("execCmd", "exec cmd: %s" % cmd)
             self.proc = subprocess.Popen(cmd, shell=False, bufsize=1000,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE)
@@ -338,7 +337,7 @@ class Iperf(QObject):
 
     def isRunning(self):
         ''' check is running'''
-        self.log("0", "stoped: %s" % self.stoped)
+        self.log("isRunning", "stoped: %s" % self.stoped)
         return not self.stoped
 
     @pyqtSlot()
@@ -354,6 +353,46 @@ class Iperf(QObject):
         self.sCmd.clear()
         if LOCKER:
             LOCKER.unlock()
+    
+    def getMaxWindowSize(self):
+        # # https://segmentfault.com/a/1190000000473365
+        # Linux Max = 425984 = 212992 * 2
+        # cat /proc/sys/net/core/rmem_max
+        # cat /proc/sys/net/core/rmem_default
+        # cat /proc/sys/net/core/wmem_max
+        # cat /proc/sys/net/core/wmem_default
+        # cat /proc/sys/net/ipv4/tcp_window_scaling
+        # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
+        # #read
+        # sysctl -w net.core.rmem_max=N
+        # sysctl -w net.core.rmem_default=N
+
+        # #write
+        # sysctl -w net.core.wmem_max=N
+        # sysctl -w net.core.wmem_default=N
+        # #apply swtting
+        #  sysctl -p
+        # FIX setting
+        # /etc/sysctl.conf
+        # net.core.rmem_default=262144
+        # net.core.wmem_default=262144
+        # net.core.rmem_max=262144
+        # net.core.wmem_max=262144
+
+        iResult = -1
+        if platform.platform() == "Linux":
+            result = subprocess.run(['cat', '/proc/sys/net/core/wmem_max'], stdout=subprocess.PIPE)
+            if type(result.stdout) == bytes:
+                try:
+                    iResult = int(result.stdout.decode())
+                except Exception as err:
+                    self.log("getMaxWindowSize", "getMaxWindowSize: %s" % err)
+        elif platform.platform() == "windows":
+            print("TODO: get Windows TCP window size")
+            # iResult = 121460
+        else:
+            print("TODO: get %s TCP window size" % platform.platform())
+        return iResult
 
     def get_port(self):
         '''return port'''
@@ -424,100 +463,124 @@ class Iperf(QObject):
         self.stoped = False
         self._tradeoffCount = 0
         self.exiting = False
-        self.log('0', "start task", 4)
+        self.log('task', "start task", 4)
         self.child = None
         while not self.exiting:
             try:
                 while len(self.sCmd) <= 0:
                     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
-                    self.log("0", "wait sCmd", 4)
+                    self.log("task", "wait sCmd", 4)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
                     if platform.system() == 'Linux':
-                        self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
-                        env = {"PYTHONUNBUFFERED": "1"}
+                        self.log("task", "sCmd: %s" % (" ".join(self.sCmd)))
+                        # env = {"PYTHONUNBUFFERED": "1"}
                         self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       bufsize=1,
                                                       universal_newlines=True,
                                                       stdout=subprocess.PIPE,
-                                                      stderr=subprocess.STDOUT,
-                                                      env=env)
+                                                      stderr=subprocess.STDOUT)
+                                                    #   , env=env)
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        if self.child is None:
-                            self.signal_finished.emit(-1,
-                                                      "command error:%s" % self.sCmd)
-                            return -1
-                        # following will not get realtime output!!
-                        for line in iter(self.child.stdout.readline, ''):
-                            rs = line.rstrip()
-                            if rs:
-                                # output result
-                                self._handel_dataline(tID, rs)
-                                if "iperf Down." in rs:
-                                    # iperf3 finish running
-                                    self.signal_finished.emit(0, "iperf Down")
-                            else:
-                                rc = self.child.poll()
-                                if rc is not None:
-                                    self.log("iperf returncode: %s" % self.child.returncode)
-                                    self.signal_finished.emit(0,
-                                                              "program exit(%s)" % rc)
-                            if self.stoped:
-                                self.signal_finished.emit(1, "set stop!!")
-                                break
-                            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+                        # if self.child is None:
+                        #     self.signal_finished.emit(-1,
+                        #                               "command error:%s" % self.sCmd)
+                        #     return -1
+                        # # following will not get realtime output!!
+                        # for line in iter(self.child.stdout.readline, ''):
+                        #     rs = line.rstrip()
+                        #     if rs:
+                        #         # output result
+                        #         self._handel_dataline(tID, rs)
+                        #         if "iperf Down." in rs:
+                        #             # iperf3 finish running
+                        #             self.signal_finished.emit(0, "iperf Down")
+                        #     else:
+                        #         rc = self.child.poll()
+                        #         if rc is not None:
+                        #             self.log("iperf returncode: %s" % self.child.returncode)
+                        #             self.signal_finished.emit(0,
+                        #                                       "program exit(%s)" % rc)
+                        #     if self.stoped:
+                        #         self.signal_finished.emit(1, "set stop!!")
+                        #         break
+                        #     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
                         #os.environ["PYTHONUNBUFFERED"] = "1"
-                        self.log("1", "sCmd: %s" % (" ".join(self.sCmd)))
+                        self.log("task", "sCmd: %s" % (" ".join(self.sCmd)))
                         self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       bufsize=1,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        if self.child is None:
-                            self.signal_finished.emit(-1, "command error")
-                            return -1
+                        # if self.child is None:
+                        #     self.signal_finished.emit(-1, "command error")
+                        #     return -1
 
-                        for line in iter(self.child.stdout.readline, b''):
-                            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
-                            rs = line.rstrip().decode("utf-8")
-                            if rs:
-                                # output result
-                                self._handel_dataline(tID, rs)
-                                if "iperf Down." in rs:
-                                    # iperf3 finish running
-                                    self.signal_finished.emit(0, "iperf Down")
-                            else:
-                                rc = self.child.poll()
-                                if rc is not None:
-                                    self.log("iperf returncode: %s" % self.child.returncode)
-                                    self.signal_finished.emit(0,
-                                                              "program exit(%s)" % rc)
-                            if self.stoped:
-                                self.signal_finished.emit(1, "set stop!!%s" % tID)
-                                break
+                        # for line in iter(self.child.stdout.readline, b''):
+                        #     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+                        #     rs = line.rstrip().decode("utf-8")
+                        #     if rs:
+                        #         # output result
+                        #         self._handel_dataline(tID, rs)
+                        #         if "iperf Down." in rs:
+                        #             # iperf3 finish running
+                        #             self.signal_finished.emit(0, "iperf Down")
+                        #     else:
+                        #         rc = self.child.poll()
+                        #         if rc is not None:
+                        #             self.log("iperf returncode: %s" % self.child.returncode)
+                        #             self.signal_finished.emit(0,
+                        #                                       "program exit(%s)" % rc)
+                        #     if self.stoped:
+                        #         self.signal_finished.emit(1, "set stop!!%s" % tID)
+                        #         break
                     else:
                         QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                         if self.stoped:
                             self.signal_finished.emit(2, "set stop!!%s" % tID)
                             break
                         pass
+                    if self.child is None:
+                            self.signal_finished.emit(-1, "command error")
+                            return -1
+                    for line in iter(self.child.stdout.readline, b''):
+                        QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+                        if type(line) == str:
+                            rs = line.rstrip()
+                        else:
+                            rs = line.rstrip().decode("utf-8")
+                        if rs:
+                            # output result
+                            self._handel_dataline(tID, rs)
+                            if "iperf Down." in rs:
+                                # iperf3 finish running
+                                self.signal_finished.emit(0, "iperf Down")
+                        else:
+                            rc = self.child.poll()
+                            if rc is not None:
+                                self.log("task", "iperf returncode: %s" % self.child.returncode)
+                                self.signal_finished.emit(0,
+                                                            "program exit(%s)" % rc)
+                        if self.stoped:
+                            self.signal_finished.emit(1, "set stop!!%s" % tID)
+                            break
                 else:
                     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                     if self.stoped:
                         self.signal_finished.emit(3, "set stop!!%s" % tID)
                         break
-                    self.log('0', "wait for command!!")
+                    self.log('task', "wait for command!!")
                     continue
             except Exception as err:
                 self.traceback("task:%s" % err)
                 # raise
             finally:
-                self.log('0', "proc end!!", 4)
+                self.log('task', "proc end!!", 4)
                 # atexit.unregister(self.kill_proc)
                 self.sCmd.clear()
                 self.exiting = True
@@ -526,7 +589,7 @@ class Iperf(QObject):
                 self.signal_finished.emit(1, "signal_finished!!")
                 break
             QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
-        self.log(0, "task end!!", 4)
+        self.log("task", "task end!!", 4)
         self.signal_finished.emit(1, "task end!!")
 
     def _handel_dataline(self, tID, line):
@@ -545,7 +608,7 @@ class Iperf(QObject):
             if "local" in line:
                 # record header data
                 # print("HEADER: %s" % (line))
-                self.log("0", "HEADER: %s" % line, 4)
+                self.log(tID, "HEADER: %s" % line, 4)
             elif "Interval" in line:
                 # ignore header line
                 time.sleep(0.5)
@@ -679,14 +742,14 @@ class Iperf(QObject):
                         self._total = int(ds[6])
                         self._per = round(float(ds[7]), 5)
                     except Exception as err:
-                        self.log("0", "ERROR: %s" % err)
+                        self.log(tID, "ERROR: %s" % err)
         else:
             # every line of data
             self.sig_data.emit(tID, iPall, data)
 
     def kill_proc(self, proc):
         try:
-            self.log("0", "kill_proc:%s" % proc)
+            self.log("kill_proc", "kill_proc:%s" % proc)
             if platform.system() == 'Linux':
                 # if not proc.terminate(force=True):
                 #    print("%s not killed" % proc)
@@ -967,9 +1030,13 @@ class IperfClient(QObject):
                 self._o["Iperf"].set_duration(duration)
 
             if parallel > 1:
+                iPara = parallel
                 self.sCmd.append("-P")
-                self.sCmd.append("%s" % parallel)
-                self._o["Iperf"].set_parallel(parallel)
+                if bitrate > 0 and protocal == 0:
+                    iPara = 1
+                    self.log("UDP with target bitrate %s %s, the parallel will force to %s" % (bitrate, unit_bitrate, iPara))
+                self.sCmd.append("%s" % iPara)
+                self._o["Iperf"].set_parallel(iPara)
 
             # run in reverse mode (server sends, client receives)
             self.set_reverse(reverse)
@@ -994,39 +1061,39 @@ class IperfClient(QObject):
             #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
             if windowsize > 0:
-                # https://segmentfault.com/a/1190000000473365
-                # Linux Max = 425984 = 212992 * 2
-                # cat /proc/sys/net/core/rmem_max
-                # cat /proc/sys/net/core/rmem_default
-                # cat /proc/sys/net/core/wmem_max
-                # cat /proc/sys/net/core/wmem_default
-                # cat /proc/sys/net/ipv4/tcp_window_scaling
-                # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
-                # #read
-                # sysctl -w net.core.rmem_max=N
-                # sysctl -w net.core.rmem_default=N
+                # if unit_windowsize == "G":
+                #     windowsize =  windowsize * 1024
+                # if unit_windowsize in ["M", "G"]:
+                #     windowsize =  windowsize * 1024
+                # if unit_windowsize in ["K", "M", "G"]:
+                #     windowsize =  windowsize * 1024
+                if unit_windowsize in ["K", "M", "G"]:
+                    iWs = windowsize
+                    if unit_windowsize in ["G"]:
+                        iWs = iWs * 1024
+                    if unit_windowsize in ["M", "G"]:
+                        iWs = iWs * 1024
+                    if unit_windowsize in ["K", "M", "G"]:
+                        iWs = iWs * 1024
+                    # check cat /proc/sys/net/core/wmem_max
+                    iMaxWS = self.getMaxWindowSize()
+                    if iMaxWS >0:
+                        if iWs > iMaxWS:
+                            print("TCP Window Size over %s system allow Max Window size %s" %(iWs, iMaxWS))
+                            windowsize = iMaxWS
+                        else:
+                            windowsize = iWs
 
-                # #write
-                # sysctl -w net.core.wmem_max=N
-                # sysctl -w net.core.wmem_default=N
-                # #apply swtting
-                #  sysctl -p
-                # FIX setting
-                # /etc/sysctl.conf
-                # net.core.rmem_default=262144
-                # net.core.wmem_default=262144
-                # net.core.rmem_max=262144
-                # net.core.wmem_max=262144
-
-                if windowsize > 425984:
-                    self.log("0", "Max window size is %s" % 425984)
-                    windowsize = 425984
+                # if windowsize > 425984:
+                #     self.log("0", "Max window size is %s" % 425984)
+                #     windowsize = 425984
                 self.sCmd.append("-w")
-                if unit_windowsize not in ["K", "M", "G"]:
-                    windowsize = "%sK" % windowsize
-                else:
-                    windowsize = "%s%s" % (windowsize, unit_windowsize)
+                # if unit_windowsize not in ["K", "M", "G"]:
+                #     windowsize = "%sK" % windowsize
+                # else:
+                #     windowsize = "%s%s" % (windowsize, unit_windowsize)
                 self.sCmd.append("%s" % windowsize)
+
                 
             # TODO: how to set dscp value/format tos?
             #if dscp >= 0:
@@ -1035,7 +1102,8 @@ class IperfClient(QObject):
             if maximum_segment_size > 0:
                 # set TCP/SCTP maximum segment size (MTU - 40 bytes)
                 # -M, , --set-mss
-                self.sCmd.append("--set-mss %s" % maximum_segment_size)
+                self.sCmd.append("--set-mss") 
+                self.sCmd.append("%s" % maximum_segment_size)
 
             if omit > 0:
                 if self._opt["version"] == 3:
