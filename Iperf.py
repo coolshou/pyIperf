@@ -816,7 +816,13 @@ class IperfServer(QObject):
         self._o["iThread"].start()
 
         self.setServerCmd()
-
+    
+    def getMaxWindowSize(self):
+        rc = -1
+        if self._o["Iperf"]:
+            rc = self._o["Iperf"].getMaxWindowSize()
+        return rc
+        
     def setServerCmd(self):
         '''iperf server command'''
         self.log("0", "setServerCmd")
@@ -926,6 +932,12 @@ class IperfClient(QObject):
         self._o["iThread"].started.connect(self._o["Iperf"].task)
         self._o["iThread"].finished.connect(self._o["iThread"].deleteLater)
         # self._o["iThread"].start()
+
+    def getMaxWindowSize(self):
+        rc = -1
+        if self._o["Iperf"]:
+            rc = self._o["Iperf"].getMaxWindowSize()
+        return rc
 
     def get_cmd(self):
         '''get cmd '''
