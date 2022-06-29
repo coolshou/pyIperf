@@ -23,9 +23,8 @@ try:
                                  QRadioButton)
     from PyQt5.QtGui import (QIcon)
     from PyQt5.uic import loadUi
-except ImportError:
-    print("pip install PyQt5")
-    raise SystemExit
+except ImportError as err:
+    raise SystemExit("pip3 install PyQt5\n %s" % err)
 
 import logging
 import serial
@@ -84,9 +83,7 @@ class XStream(QObject):
             sys.stderr = XStream._stderr
         return XStream._stderr
 
-
 locker = QMutex()
-
 
 class columnResult(Enum):
     colDate = 0
@@ -95,9 +92,9 @@ class columnResult(Enum):
     colTx = colDegree + 1
     colRx = colTx + 1
 
-
 class MainWindow(QMainWindow):
-    __VERSION__ = "20180907"
+    # __VERSION__ = "20180907"
+    __VERSION__ = "20220628"
     signal_debug = pyqtSignal(str, str)
     sig_wait = pyqtSignal(int, str)  # wait time, wait msg
 
@@ -409,6 +406,7 @@ class MainWindow(QMainWindow):
     def finish(self, iCode, msg):
         self.log(str(iCode), "finish: %s %s" % (iCode, msg))
         self.setRunning(False)
+        self.setStop(True)
         pass
         # if self.txC:
         #    self.txC.stop()
@@ -514,13 +512,13 @@ class MainWindow(QMainWindow):
     'server':'%s', 'protocal': %s, 'duration':%s, \
     'parallel':%s, 'reverse':0, \
     'bitrate':%s, 'unit_bitrate':'%s', \
-    'windowsize':%s, 'omit':2, \
+    'windowsize':%s,'unit_windowsize': '%s', 'omit':2, \
     'fmtreport':'%s', 'version':%s}" % (host, protocal, duration, parallel ,iBitrate,sBitrateUnit,
-      iWindowSize, sFormat, ver)
+      iWindowSize, sWindowSizeUnit, sFormat, ver)
 
-        self.s = IperfServer(port=port, iperfver=ver)
-        self.s.signal_result.connect(self.parserServerReult)
-        self.s.signal_debug.connect(self.log)
+        # self.s = IperfServer(port=port, iperfver=ver)
+        # self.s.signal_result.connect(self.parserServerReult)
+        # self.s.signal_debug.connect(self.log)
 
         # twResult  alweady have data, append new data.
         iRow = self.tableResult.rowCount()
