@@ -822,7 +822,7 @@ class IperfServer(QObject):
         if self._o["Iperf"]:
             rc = self._o["Iperf"].getMaxWindowSize()
         return rc
-        
+
     def setServerCmd(self):
         '''iperf server command'''
         self.log("0", "setServerCmd")
@@ -1073,28 +1073,24 @@ class IperfClient(QObject):
             #     self.sCmd.append("%s%s" % (iBitrate, sBitrateUnit))
 
             if windowsize > 0:
-                # if unit_windowsize == "G":
-                #     windowsize =  windowsize * 1024
-                # if unit_windowsize in ["M", "G"]:
-                #     windowsize =  windowsize * 1024
-                # if unit_windowsize in ["K", "M", "G"]:
-                #     windowsize =  windowsize * 1024
-                if unit_windowsize in ["K", "M", "G"]:
-                    iWs = windowsize
-                    if unit_windowsize in ["G"]:
-                        iWs = iWs * 1024
-                    if unit_windowsize in ["M", "G"]:
-                        iWs = iWs * 1024
+                if 0:
+                    # TODO: MaxWindowSize
                     if unit_windowsize in ["K", "M", "G"]:
-                        iWs = iWs * 1024
-                    # check cat /proc/sys/net/core/wmem_max
-                    iMaxWS = self.getMaxWindowSize()
-                    if iMaxWS >0:
-                        if iWs > iMaxWS:
-                            print("TCP Window Size over %s system allow Max Window size %s" %(iWs, iMaxWS))
-                            windowsize = iMaxWS
-                        else:
-                            windowsize = iWs
+                        iWs = windowsize
+                        if unit_windowsize in ["G"]:
+                            iWs = iWs * 1024
+                        if unit_windowsize in ["M", "G"]:
+                            iWs = iWs * 1024
+                        if unit_windowsize in ["K", "M", "G"]:
+                            iWs = iWs * 1024
+                        # check cat /proc/sys/net/core/wmem_max
+                        iMaxWS = self.getMaxWindowSize()
+                        if iMaxWS >0:
+                            if iWs > iMaxWS:
+                                print("TCP Window Size over %s system allow Max Window size %s" %(iWs, iMaxWS))
+                                windowsize = iMaxWS
+                            else:
+                                windowsize = iWs
 
                 # if windowsize > 425984:
                 #     self.log("0", "Max window size is %s" % 425984)
@@ -1104,7 +1100,7 @@ class IperfClient(QObject):
                 #     windowsize = "%sK" % windowsize
                 # else:
                 #     windowsize = "%s%s" % (windowsize, unit_windowsize)
-                self.sCmd.append("%s" % windowsize)
+                self.sCmd.append("%s%s" % (windowsize, unit_windowsize))
 
                 
             # TODO: how to set dscp value/format tos?
