@@ -16,7 +16,7 @@ import signal
 from enum import Enum
 try:
     from PyQt5.QtCore import (QObject, pyqtSignal, pyqtSlot, QSettings,
-                              QMutex, Qt, QFileInfo)
+                              QMutex, Qt, QFileInfo, QCoreApplication, QEventLoop)
     from PyQt5.QtWidgets import (QApplication, QMainWindow,
                                  QMessageBox, QAbstractItemView,
                                  QTableWidgetItem, QFileDialog, QDialog,
@@ -99,6 +99,7 @@ class columnResult(Enum):
 class MainWindow(QMainWindow):
     __VERSION__ = "20180907"
     signal_debug = pyqtSignal(str, str)
+    sig_wait = pyqtSignal(int, str)  # wait time, wait msg
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -158,12 +159,20 @@ class MainWindow(QMainWindow):
         self.s = None
         self.txC = None
         self.rxC = None
+        self._opt = {}
+        self._opt["wait_cancel"] = False  # cancel wait
+        self._stop = False
+        self.sig_wait.connect(self._on_wait)
 
     def __del__(self):
         ''' destructure     '''
         if self.s:
             if self.s.isRunning():
                 self.s.stop()
+    
+    @pyqtSlot(int, str)
+    def _on_wait(self, iwait, msg):
+        print("%s %s" % (msg, iwait))
 
     @pyqtSlot(QRadioButton)
     def setIperfVersion(self, b):
@@ -336,8 +345,12 @@ class MainWindow(QMainWindow):
         print("setStop: %s" % bState)
         self.stoped = bState
 
-    @pyqtSlot(int, str)
-    def parserServerReult(self, iType, msg):
+    @pyqtSlot(int, int, str)
+    def parserServerReult(self, tid, iType, msg):
+        #  tid: thread id
+        #  iType: int type
+        #  msg: message
+        #
         self.log(str(iType),
                  "#TODO: parserServerReult: %s, %s" % (iType, msg))
         pass
@@ -353,8 +366,13 @@ class MainWindow(QMainWindow):
                                           QAbstractItemView.PositionAtCenter)
         pass
 
-    @pyqtSlot(int, int, int, str)
-    def parserReult(self, iRow, iCol, iType, msg):
+    @pyqtSlot(int, int, int, int, str)
+    def parserReult(self, iRow, iCol, tid, iType, msg):
+        # iRow
+        # iCol
+        # tid: thread id
+        # iType: int type
+        # msg: message
         print("parserReult: %s, %s, %s, %s" % (iRow, iCol, iType, msg))
         if self.rbIperf3.isChecked():
             # iperf v3 format
@@ -418,7 +436,7 @@ class MainWindow(QMainWindow):
     def debug(self, sType, sMsg):
         print("debug: %s = %s" % (sType, sMsg))
         if self.teLog is not None:
-            self.teLog.append(sMsg)
+            self.teLog.append("[%s] %s" % (sType, sMsg))
 
     @pyqtSlot(int, int, str, str)
     def error(self, iRow, iCol, sType, sMsg):
@@ -429,9 +447,11 @@ class MainWindow(QMainWindow):
         self.errorStoped = True
 
     def setRunning(self, bStatus):
+        print("setRunning: %s" % bStatus)
+        self._stop = not bStatus
         self.pbStart.setEnabled(not bStatus)
         self.pbStop.setEnabled(bStatus)
-        self.setStop(not bStatus)
+        # self.setStop(not bStatus)
         self.actionConfig.setEnabled(not bStatus)
         self.errorStoped = not bStatus
 
@@ -447,6 +467,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(bool)
     def startClient(self, isCheck):
+        ipc = []
         self.setRunning(True)
         # print("TODO: startClient")
         if self.rbIperf3.isChecked():
@@ -467,8 +488,10 @@ class MainWindow(QMainWindow):
         # print("cbReverse: %s" % bReverse)
         if self.rbTCP.isChecked():
             isTCP = True
+            protocal =0
         else:
             isTCP = False
+            protocal =1
         #
         # print("TODO: sbWindowSize: %s" % self.sbWindowSize.value())
         iWindowSize = self.sbWindowSize.value()
@@ -488,11 +511,12 @@ class MainWindow(QMainWindow):
 
         # TODO: iperf server? or other place
         ds = "{'mIPserver':'192.168.70.147', 'mIPclient':'192.168.70.11', \
-    'server':'%s', 'protocal': %s, 'duration':20, \
-    'parallel':1, 'reverse':0, \
-    'bitrate':4.23, 'unit_bitrate':'M', \
-    'windowsize':64, 'omit':2, \
-    'fmtreport':'m'}" % (host)
+    'server':'%s', 'protocal': %s, 'duration':%s, \
+    'parallel':%s, 'reverse':0, \
+    'bitrate':%s, 'unit_bitrate':'%s', \
+    'windowsize':%s, 'omit':2, \
+    'fmtreport':'%s', 'version':%s}" % (host, protocal, duration, parallel ,iBitrate,sBitrateUnit,
+      iWindowSize, sFormat, ver)
 
         self.s = IperfServer(port=port, iperfver=ver)
         self.s.signal_result.connect(self.parserServerReult)
@@ -509,27 +533,36 @@ class MainWindow(QMainWindow):
             self.txC.signal_finished.connect(self.finish)
             self.txC.signal_error.connect(self.error)
             self.txC.signal_debug.connect(self.debug)
-        if not self.txC.isRunning():
-            print("tx : %s" % self.txC.isRunning())
-            self.txC.startTest()
-            print("check tx : %s" % self.txC.isRunning())
+            ipc.append(self.txC)
+        # if not self.txC.isRunning():
+        #     print("tx : %s" % self.txC.isRunning())
+        #     self.txC.startTest()
+        #     print("check tx : %s" % self.txC.isRunning())
 
-        if not self.rxC:
-            print("rxC: %s" % ver)
-            self.rxC = IperfClient(port, ds, iperfver=ver)
-            self.rxC.signal_result.connect(self.parserReult)
-            self.rxC.signal_finished.connect(self.finish)
-            self.rxC.signal_error.connect(self.error)
-            self.rxC.signal_debug.connect(self.debug)
-        if not self.rxC.isRunning():
-            print("rx : %s" % self.rxC.isRunning())
-            self.rxC.startTest()
-            print("check rx : %s" % self.rxC.isRunning())
+        # if not self.rxC:
+        #     print("rxC: %s" % ver)
+        #     self.rxC = IperfClient(port, ds, iperfver=ver)
+        #     self.rxC.signal_result.connect(self.parserReult)
+        #     self.rxC.signal_finished.connect(self.finish)
+        #     self.rxC.signal_error.connect(self.error)
+        #     self.rxC.signal_debug.connect(self.debug)
+        #     ipc.append(self.rxC)
+        # if not self.rxC.isRunning():
+        #     print("rx : %s" % self.rxC.isRunning())
+        #     self.rxC.startTest()
+        #     print("check rx : %s" % self.rxC.isRunning())
+
 
         # cmd = []
-        for degree in range(self.ttStart.value(), self.ttEnd.value(),
-                            self.ttStep.value()):
-            print("TODO: TurnTable control!! %s" % degree)
+        # for degree in range(self.ttStart.value(), self.ttEnd.value(),
+        #                     self.ttStep.value()):
+        #     print("TODO: TurnTable control!! %s" % degree)
+        #     # degree
+        #     self.updateData(iRow, columnResult.colDegree.value, str(degree))
+        #     self.logToFile("%s, %s, %s" % (testTime,
+        #                                self.lePlace.text(), str(degree)))
+
+        if 1:
             # print("Client is running: %s" % self.txC.isRunning())
             # date
             testTime = self.getCurrentTime()
@@ -537,79 +570,110 @@ class MainWindow(QMainWindow):
             # place
             self.updateData(iRow, columnResult.colPlace.value,
                             self.lePlace.text())
-            # degree
-            self.updateData(iRow, columnResult.colDegree.value, str(degree))
-            self.logToFile("%s, %s, %s" % (testTime,
-                                           self.lePlace.text(), str(degree)))
 
             if self.cbTx.isChecked():  # Tx
                 iWait = 0
                 try:
-                    self.txC.setRowCol(iRow, columnResult.colTx.value)
-                    self.txC.setTartgetHost(host, port)
-                    self.txC.setClientCmd(sFormat, isTCP, duration, parallel,
-                                          bReverse, iBitrate, sBitrateUnit,
-                                          iWindowSize, sWindowSizeUnit,
-                                          iMTU)
-                    while iWait < duration + 3:
-                        self.progressBar.setValue(iWait)
-                        time.sleep(1)
-                        QApplication.processEvents()
-                        iWait = iWait + 1
-                        if self.stoped or self.errorStoped:
-                            break
+                    self.txC.start()
+                    # self.txC.setRowCol(iRow, columnResult.colTx.value)
+                    # # self.txC.setTartgetHost(host, port)
+                    # self.txC.setClientCmd(sFormat, isTCP, duration, parallel,
+                    #                       bReverse, iBitrate, sBitrateUnit,
+                    #                       iWindowSize, sWindowSizeUnit,
+                    #                       iMTU)
+                    # while iWait < duration + 3:
+                    #     self.progressBar.setValue(iWait)
+                    #     time.sleep(1)
+                    #     QApplication.processEvents()
+                    #     iWait = iWait + 1
+                    #     if self.stoped or self.errorStoped:
+                    #         break
                 except Exception as e:
                     print("something error!!!!!!!!!!!!!! %s" % e)
                     self.traceback()
-            if self.stoped or self.errorStoped:
-                break
+            # if self.stoped or self.errorStoped:
+            #     break
             if self.cbRx.isChecked():  # Rx
                 iWait = 0
                 try:
-                    self.rxC.setRowCol(iRow, columnResult.colRx.value)
-                    self.rxC.setTartgetHost(host, port)
-                    self.rxC.setClientCmd(sFormat, isTCP, duration, parallel,
-                                          not bReverse, iBitrate, sBitrateUnit,
-                                          iWindowSize, sWindowSizeUnit,
-                                          iMTU)
+                    self.rxC.start()
+                    # self.rxC.setRowCol(iRow, columnResult.colRx.value)
+                    # self.rxC.setTartgetHost(host, port)
+                    # self.rxC.setClientCmd(sFormat, isTCP, duration, parallel,
+                    #                       not bReverse, iBitrate, sBitrateUnit,
+                    #                       iWindowSize, sWindowSizeUnit,
+                    #                       iMTU)
 
-                    while iWait < duration + 3:
-                        self.progressBar.setValue(iWait)
-                        time.sleep(1)
-                        QApplication.processEvents()
-                        iWait = iWait + 1
-                        if self.stoped or self.errorStoped:
-                            break
+                    # while iWait < duration + 3:
+                    #     self.progressBar.setValue(iWait)
+                    #     time.sleep(1)
+                    #     QApplication.processEvents()
+                    #     iWait = iWait + 1
+                    #     if self.stoped or self.errorStoped:
+                    #         break
                 except Exception as e:
                     print("something error!!!!!!!!!!!!!! %s" % e)
                     self.traceback()
-            if self.stoped or self.errorStoped:
-                break
+            # if self.stoped or self.errorStoped:
+            #     break
             if self.cbTxRx.isChecked():  # TxRx
                 iWait = 0
                 try:
                     print("TODO TxRx Bi-direction")
 
-                    while iWait < duration + 3:
-                        self.progressBar.setValue(iWait)
-                        time.sleep(1)
-                        QApplication.processEvents()
-                        iWait = iWait + 1
-                        if self.stoped or self.errorStoped:
-                            break
+                    # while iWait < duration + 3:
+                    #     self.progressBar.setValue(iWait)
+                    #     time.sleep(1)
+                    #     QApplication.processEvents()
+                    #     iWait = iWait + 1
+                    #     if self.stoped or self.errorStoped:
+                    #         break
                 except Exception as e:
                     print("something error!!!!!!!!!!!!!! %s" % e)
                     self.traceback()
 
             self.logToFile("\n")
             iRow = iRow + 1
-            if self.stoped or self.errorStoped:
-                break
-
+            # if self.stoped or self.errorStoped:
+            #     break
+            self._wait("iperf stop", 30, ipc)
         print("finish")
         self.progressBar.setValue(0)
         self.setRunning(False)
         # self.setRunning(False)
+    
+    def _wait(self, msg, timeout=10, waitobjlist=None, mIdx=""):
+        '''wait for some time'''
+        waitCount = 0
+        bStop = False
+        # timeout = timeout * 2
+        while ((not self._stop) and
+               (waitCount < timeout) and
+               (not self._opt["wait_cancel"]) and
+               (not bStop)):
+            wait = timeout - waitCount
+            # self.sig_wait.emit(wait, "wait %s for %s sec" % (msg, wait))
+            mtmp = "wait %s for %s sec" % (msg, wait)
+            if mIdx:
+                self.update_status_col(mIdx, mtmp, True)
+            else:
+                self.sig_wait.emit(wait, mtmp)
+            waitCount = waitCount + 1
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+            time.sleep(1)
+            if waitobjlist:
+                if type(waitobjlist) == dict:
+                    for key in waitobjlist:
+                        QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+                        obj = waitobjlist[key]
+                        if type(obj) == tuple:
+                            obj = obj[0]
+                        if obj.is_ipc_running():
+                            self.sig_wait.emit(wait,
+                                               "wait %s for %s sec" % (msg,
+                                                                       wait))
+                            bStop = False
+                            break
 
     def clearResult(self):
         msgBox = QMessageBox()
