@@ -12,7 +12,7 @@ Created on Tue Jul 18 13:45:15 2017
 import time
 import sys
 import traceback
-import datetime
+# import datetime
 import subprocess
 import os
 import platform
@@ -33,32 +33,7 @@ basedir = os.path.join(os.getcwd(), os.path.dirname(__file__))
 sys.path.append(os.path.join(basedir, "..", "..", "pyWAT"))
 from nbstreamreader import NonBlockingStreamReader as NBSR
 
-
-# if platform.system() == 'Windows':
-#     import atexit
-# if platform.system() == 'Linux':
-#     import pexpect
-
-IPERFUNIT = {}
-IPERFUNIT["bits"] = 0  # b
-IPERFUNIT["Kbits"] = 1  # kb
-IPERFUNIT["Mbits"] = 2  # mb
-IPERFUNIT["Gbits"] = 3  # gb
-IPERFUNIT["Tbits"] = 4  # tb
-IPERFUNIT["Pbits"] = 5  # pb
-IPERFUNIT["Ebits"] = 6  # eb
-IPERFUNIT["Zbits"] = 7  # zb
-IPERFUNIT["Ybits"] = 8  # yb
-
-IPERFUNIT["Bytes"] = 10  # B
-IPERFUNIT["KBytes"] = 11  # KB
-IPERFUNIT["MBytes"] = 12  # MB
-IPERFUNIT["GBytes"] = 13  # GB
-IPERFUNIT["TBytes"] = 14  # TB
-IPERFUNIT["PBytes"] = 15  # PB
-IPERFUNIT["EBytes"] = 16  # EB
-IPERFUNIT["ZBytes"] = 17  # ZB
-IPERFUNIT["YBytes"] = 18  # YB
+from iperfcomm import IPERFprotocal, DEFAULT_IPERF3_PORT, DEFAULT_IPERF2_PORT
 
 
 def kill(proc_pid):
@@ -68,150 +43,8 @@ def kill(proc_pid):
         proc.kill()
     process.kill()
 
-
-class IperfResult():
-    '''class to handle iperf throughput output line'''
-    # TODO:
-    iKb = 1024
-    iMb = iKb * 1024
-    iGb = iMb * 1024
-    iTb = iGb * 1024
-    iPb = iTb * 1024
-    iEb = iPb * 1024
-    iZb = iEb * 1024
-    iYb = iZb * 1024
-
-    def __init__(self, iParallel, result):
-        self.error = False
-        self.errorMsg = ""
-
-        self.reportTime = ""
-        self.idx = ""
-        self.measureTimeStart = 0
-        self.measureTimeEnd = 0
-        self.measureTimeUnit = 'sec'
-        self.totalSend = ""
-        self.totalSendUnit = ""
-        self.throughput = ""
-        self.throughputUnit = ""
-
-        #
-        self.iParallel = iParallel
-        try:
-            if result is not None:
-                self.reportTime = datetime.datetime.now()
-                if ('sender' in result) or ('receiver' in result):
-                    print("This is avg: %s" % result)
-                    # return None
-                    rs = result.strip().split(']')
-                    self.idx = rs[0].replace('[', '').strip()
-
-                    rs = rs[1].split(' ')
-                    nrs = list(filter(None, rs))
-                    self.measureTimeStart = nrs[0].split('-')[0]
-                    self.measureTimeEnd = nrs[0].split('-')[1]
-                    self.measureTimeUnit = nrs[1].strip()
-
-                    self.totalSend = nrs[2].strip()
-                    self.totalSendUnit = nrs[3].strip()
-
-                    self.throughput = nrs[4].strip()
-                    self.throughputUnit = nrs[5].strip()
-                elif ('ID') in result:
-                    print("This is header: %s" % result)
-                    return None
-                else:
-                    rs = result.strip().split('   ')
-
-                    # print(rs[0][1:4]), idx 1,2,3... or SUM
-                    self.idx = rs[0][1:4].strip()
-                    # print(rs[1].split('-')[0])
-                    self.measureTimeStart = rs[1].split('-')[0]
-                    self.measureTimeEnd = rs[1].split('-')[1]
-                    # print(rs[2])
-                    self.measureTimeUnit = rs[2].strip()
-                    # print(rs[3])
-                    v, u = rs[3].split(" ")
-                    self.totalSend = v
-                    self.totalSendUnit = u
-                    # print(rs[4])
-                    v, u = rs[4].split(" ")
-                    self.throughput = v
-                    self.throughputUnit = u
-                # print(rs[5].strip())
-                # print(rs[6].strip())
-        except Exception as err:
-            print("IperfResult init: %s" % err)
-            self.error = True
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
-            return None
-            # traceback.print_exc(file=sys.stdout)
-
-    def convertReportTime(self, sTime):
-        '''convert string sTime (20170813164651) to datetime format'''
-        # print(sTime[:4]) #year
-        # print(sTime[4:6]) #month
-        # print(sTime[6:8]) #day
-        # print(sTime[8:10]) #hr
-        # print(sTime[10:12]) #min
-        # print(sTime[12:14]) #sec
-        d = datetime.datetime(year=int(sTime[:4]),
-                              month=int(sTime[4:6]),
-                              day=int(sTime[6:8]),
-                              hour=int(sTime[8:10]),
-                              minute=int(sTime[10:12]),
-                              second=int(sTime[12:14]))
-        return d
-
-    def convert_bytes(self, bytes):
-        bytes = float(bytes)
-        # YB: yottabyte = zettabyte * 1024
-        if bytes >= self.iYb:  # 1024*1024*1024*1024*1024*1024*1024*1024
-            yottabyte = bytes / self.iYb
-            size = '%.2f Y' % yottabyte
-        if bytes >= self.iZb:  # 1024*1024*1024*1024*1024*1024*1024
-            zettabyte = bytes / self.iZb
-            size = '%.2f Z' % zettabyte
-        elif bytes >= self.iEb:  # 1024*1024*1024*1024*1024*1024
-            exabyte = bytes / self.iEb
-            size = '%.2f E' % exabyte
-        elif bytes >= self.iPb:  # 1024*1024*1024*1024*1024
-            petabytes = bytes / self.iPb
-            size = '%.2f P' % petabytes
-        elif bytes >= self.iTb:  # 1024*1024*1024*1024
-            terabytes = bytes / self.iTb
-            size = '%.2f T' % terabytes
-        elif bytes >= self.iGb:  # 1024*1024*1024
-            gigabytes = bytes / self.iGb
-            size = '%.2f G' % gigabytes
-        elif bytes >= self.iMb:  # 1024*1024
-            megabytes = bytes / self.iMb
-            size = '%.2f M' % megabytes
-        elif bytes >= self.iKb:
-            kilobytes = bytes / self.iKb
-            size = '%.2f K' % kilobytes
-        else:
-            size = '%.2f byte' % bytes
-        return size.split(" ")
-
-
-IPERFprotocal = {
-    'TCP': 0,  # TCP
-    'UDP': 1,   # UDP
-}
-
-'''
-class IperfThread(QThread):
-    def run(self):
-        self.exec_()
-'''
 # LOCKER = QMutex()
 LOCKER = None
-
-DEFAULT_IPERF3_PORT = 5201
-DEFAULT_IPERF2_PORT = 5001
-
 
 class Iperf(QObject):
     '''manager class to control iperf2/iperf3 running'''
@@ -364,20 +197,22 @@ class Iperf(QObject):
         # cat /proc/sys/net/ipv4/tcp_window_scaling
         # https://access.redhat.com/documentation/zh-tw/red_hat_enterprise_linux/6/html/performance_tuning_guide/s-network-dont-adjust-defaults
         # #read
-        # sysctl -w net.core.rmem_max=N
+        # sudo sysctl -w net.core.rmem_max=67108864
         # sysctl -w net.core.rmem_default=N
-
         # #write
-        # sysctl -w net.core.wmem_max=N
+        # sudo sysctl -w net.core.wmem_max=67108864
         # sysctl -w net.core.wmem_default=N
         # #apply swtting
-        #  sysctl -p
+        # sudo sysctl -p
+
         # FIX setting
-        # /etc/sysctl.conf
-        # net.core.rmem_default=262144
-        # net.core.wmem_default=262144
-        # net.core.rmem_max=262144
-        # net.core.wmem_max=262144
+        # /etc/sysctl.d/mem.conf
+        # net.core.rmem_default=67108864
+        # net.core.wmem_default=67108864
+
+        # net.core.rmem_max=67108864
+        # net.core.wmem_max=67108864
+        # sudo service procps force-reload
 
         iResult = -1
         if platform.platform() == "Linux":
@@ -889,7 +724,7 @@ class IperfClient(QObject):
     """ A network testing client that will start an iperf2/3 in QThread
     which will connect to specify iperf2/3 server."""
     # row, col, thread, iParallel, data
-    signal_result = pyqtSignal(int, int, int, int, str)
+    signal_result = pyqtSignal(int, int, int, int, str) # excel row, excel col, thread id, iPall index, 
     signal_finished = pyqtSignal(int, str)
     # row, col, sType, sMsg
     signal_error = pyqtSignal(int, int, str, str)

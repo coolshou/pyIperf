@@ -31,9 +31,10 @@ import serial
 import serial.tools.list_ports as list_ports
 # import re
 
-from Iperf import IperfServer, IperfClient, IperfResult
+from Iperf import IperfServer, IperfClient
+from iperfresult import IperfResult
 from dlgConfig import Ui_Dialog as dlgConfig
-
+from tpchart import TPChart
 
 class QtHandler(logging.Handler):
 
@@ -124,6 +125,8 @@ class MainWindow(QMainWindow):
                                              self.__VERSION__))
         self.setWindowIcon(QIcon(icon_main))
         # TODO: tabChart (current hide)
+        self.tpc = TPChart()
+        self.chartview.setChart(self.tpc)
         # self.twResult.setTabEnabled(0,False) #enable/disable the tab
 
         # comport
@@ -146,6 +149,7 @@ class MainWindow(QMainWindow):
         self.pbClear.clicked.connect(self.clearResult)
         # action
         self.actionAbout.triggered.connect(self.showAbout)
+        self.actionLoad.triggered.connect(self.on_load)
         self.actionSave.triggered.connect(self.saveResult)
         self.actionSave.changed.connect(self.setResultChange)
         self.actionConfig.triggered.connect(self.showConfig)
@@ -190,6 +194,11 @@ class MainWindow(QMainWindow):
         dialog.ui.setupUi(dialog)
         dialog.exec_()
         dialog.show()  # show module, wait use apply setting?
+    
+    @pyqtSlot()
+    def on_load(self):
+        if self.tpc:
+            self.tpc.load()
 
     @pyqtSlot()
     def showAbout(self):
@@ -369,7 +378,7 @@ class MainWindow(QMainWindow):
         # iCol
         # tid: thread id
         # iType: int type
-        # msg: message
+        # msg: message = (Tx/Rx, data line)
         print("parserReult: %s, %s, %s, %s" % (iRow, iCol, iType, msg))
         if self.rbIperf3.isChecked():
             # iperf v3 format
