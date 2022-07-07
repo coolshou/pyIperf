@@ -108,9 +108,9 @@ class Iperf(QObject):
         self.child = None  # subprocress of iperf
         '''store iperf UDP packet error rate (PER) result'''
         # self._per = ""
-        self._lost = {}  # udp lost packet
-        self._total = {}  # udp total packet
-        self._per = {}   # udp pcaket lost rate %
+        self._lost = -1  # udp lost packet
+        self._total = -1  # udp total packet
+        self._per = -1   # udp pcaket lost rate %
 
     def set_bidir(self, isBidir=True):
         self._bidir = isBidir
