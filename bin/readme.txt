@@ -70,3 +70,10 @@ iperf2
 #arm
 /configure --without-openssl --host=arm-none-linux-gnueabi CC=arm-linux-gnueabi-gcc LD=arm-linux-gnueabi-ld CXX=arm-linux-gnueabi-g++ CFLAGS=-static CXXFLAGS=-static --enable-static --disable-shared --prefix=/home/doru/Desktop/iperf3/output
 
+
+
+######
+# qiperf-1.0.apk
+#
+android app to run iperf2/3 in server mode
+
