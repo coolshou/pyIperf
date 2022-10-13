@@ -205,6 +205,11 @@ class Iperf(QObject):
         # #apply swtting
         # sudo sysctl -p
 
+        # android (samsung S22+)           
+        #  cat /proc/sys/net/core/rmem_max    => 16777216
+        #  cat /proc/sys/net/core/wmem_max    => 8388608
+
+
         # FIX setting
         # /etc/sysctl.d/mem.conf
         # net.core.rmem_default=67108864
@@ -261,6 +266,10 @@ class Iperf(QObject):
     def get_resultdetail(self):
         '''get store iperf all result lines'''
         return self._detail
+
+    def clear_resultdetail(self):
+        '''clear result data to free memory usage??'''
+        self._detail.clear()
 
     def set_cmd(self, cmd):
         if LOCKER:
@@ -433,8 +442,8 @@ class Iperf(QObject):
         detail = line.strip()
         if len(detail) > 0:
             # recore every line except empty line
-            if detail=="\r":
-                # do not record line contain only \r
+            if (detail=="\r") or (detail == "\r\n"):
+                # do not record line contain only \r or \r\n
                 pass
             else:
                 self._detail.append(detail)
@@ -1021,8 +1030,10 @@ class IperfClient(QObject):
     def get_resultdetail(self):
         '''get store iperf all result'''
         rc = self._o["Iperf"].get_resultdetail()
-        # self.log("get_resultdetail", "%s" % rc)
         return rc
+
+    def clear_resultdetail(self):
+        self._o["Iperf"].clear_resultdetail()
 
     def isRunning(self):
         # st = self._o["iperf"].isRunning() and self._o["iThread"].isRunning()
