@@ -327,29 +327,7 @@ class Iperf(QObject):
                                                     #   , env=env)
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        # if self.child is None:
-                        #     self.signal_finished.emit(-1,
-                        #                               "command error:%s" % self.sCmd)
-                        #     return -1
-                        # # following will not get realtime output!!
-                        # for line in iter(self.child.stdout.readline, ''):
-                        #     rs = line.rstrip()
-                        #     if rs:
-                        #         # output result
-                        #         self._handel_dataline(tID, rs)
-                        #         if "iperf Down." in rs:
-                        #             # iperf3 finish running
-                        #             self.signal_finished.emit(0, "iperf Down")
-                        #     else:
-                        #         rc = self.child.poll()
-                        #         if rc is not None:
-                        #             self.log("iperf returncode: %s" % self.child.returncode)
-                        #             self.signal_finished.emit(0,
-                        #                                       "program exit(%s)" % rc)
-                        #     if self.stoped:
-                        #         self.signal_finished.emit(1, "set stop!!")
-                        #         break
-                        #     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+
                     elif platform.system() == 'Windows':
                         # TODO: windows how to output result with realtime!!
                         # PIPE is not working!!, iperf3 will buffer it
@@ -361,28 +339,6 @@ class Iperf(QObject):
                                                       stderr=subprocess.STDOUT)
                         # need this to kill iperf3 procress
                         # atexit.register(self.kill_proc, self.child)
-                        # if self.child is None:
-                        #     self.signal_finished.emit(-1, "command error")
-                        #     return -1
-
-                        # for line in iter(self.child.stdout.readline, b''):
-                        #     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
-                        #     rs = line.rstrip().decode("utf-8")
-                        #     if rs:
-                        #         # output result
-                        #         self._handel_dataline(tID, rs)
-                        #         if "iperf Down." in rs:
-                        #             # iperf3 finish running
-                        #             self.signal_finished.emit(0, "iperf Down")
-                        #     else:
-                        #         rc = self.child.poll()
-                        #         if rc is not None:
-                        #             self.log("iperf returncode: %s" % self.child.returncode)
-                        #             self.signal_finished.emit(0,
-                        #                                       "program exit(%s)" % rc)
-                        #     if self.stoped:
-                        #         self.signal_finished.emit(1, "set stop!!%s" % tID)
-                        #         break
                     else:
                         QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                         if self.stoped:
@@ -392,6 +348,7 @@ class Iperf(QObject):
                     if self.child is None:
                             self.signal_finished.emit(-1, "command error")
                             return -1
+
                     for line in iter(self.child.stdout.readline, b''):
                         QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
                         if type(line) == str:
