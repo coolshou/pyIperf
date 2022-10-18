@@ -179,6 +179,7 @@ class Iperf(QObject):
         self.stoped = True
         if self.child:
             if platform.platform() == "Linux":
+                self.log("do_stop SIGUSR1: %s" % self.child.pid, 0)
                 os.killpg(self.child.pid, signal.SIGUSR1)
             else:
                 self.child.terminate()
