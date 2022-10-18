@@ -12,14 +12,12 @@ Created on Tue Jul 18 13:45:15 2017
 import time
 import sys
 import traceback
-# import datetime
 import subprocess
+import signal
 import os
 import platform
-# import logging
 import psutil
 import ast
-# import zlib
 import re
 
 try:
@@ -180,7 +178,10 @@ class Iperf(QObject):
             LOCKER.lock()
         self.stoped = True
         if self.child:
-            self.child.terminate()
+            if platform.platform() == "Linux":
+                os.killpg(self.child.pid, signal.SIGUSR1)
+            else:
+                self.child.terminate()
             # set proc obj to None to remove Z (Zombie) proc under linux
             self.child = None
         self.sCmd.clear()
@@ -555,13 +556,13 @@ class Iperf(QObject):
                 # if not proc.terminate(force=True):
                 #    print("%s not killed" % proc)
                 subprocess.call(['sudo', 'kill', str(proc.pid)])
+                # os.killpg(proc.pid, signal.SIGUSR1)  # 10
             else:
                 # if platform.system() == 'Windows':
                 proc.terminate()
 
-        except Exception:
-            self.traceback("kill_proc")
-            pass
+        except Exception as err:
+            self.traceback("kill_proc: %s" % err)
 
     def log(self, mType, msg, level=1):
         # mType: message type,
