@@ -318,37 +318,39 @@ class Iperf(QObject):
                     self.log("task", "wait sCmd", 4)
                     time.sleep(0.5)
                 if len(self.sCmd) > 0:
-                    if platform.system() == 'Linux':
-                        self.log("task", "sCmd: %s" % (" ".join(self.sCmd)))
-                        # env = {"PYTHONUNBUFFERED": "1"}
-                        self.child = subprocess.Popen(self.sCmd, shell=False,
-                                                      bufsize=1,
-                                                      universal_newlines=True,
+                    self.log("task", "sCmd: %s" % (" ".join(self.sCmd)))
+                    self.child = subprocess.Popen(self.sCmd, shell=False,
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.STDOUT)
-                                                    #   , env=env)
-                        # need this to kill iperf3 procress
-                        # atexit.register(self.kill_proc, self.child)
+                    # if platform.system() == 'Linux':
+                    #     # env = {"PYTHONUNBUFFERED": "1"}
+                    #     self.child = subprocess.Popen(self.sCmd, shell=False,
+                    #                                   stdout=subprocess.PIPE,
+                    #                                   stderr=subprocess.STDOUT)
+                    #                                 #   bufsize=1,
+                    #                                 #   universal_newlines=True,
+                    #                                 #   , env=env)
+                    #     # need this to kill iperf3 procress
+                    #     # atexit.register(self.kill_proc, self.child)
 
-                    elif platform.system() == 'Windows':
-                        # TODO: windows how to output result with realtime!!
-                        # PIPE is not working!!, iperf3 will buffer it
-                        #os.environ["PYTHONUNBUFFERED"] = "1"
-                        self.log("task", "sCmd: %s" % (" ".join(self.sCmd)))
-                        self.child = subprocess.Popen(self.sCmd, shell=False,
-                                                      bufsize=1,
-                                                      stdout=subprocess.PIPE,
-                                                      stderr=subprocess.STDOUT)
-                        # need this to kill iperf3 procress
-                        # atexit.register(self.kill_proc, self.child)
-                    else:
-                        QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
-                        if self.stoped:
-                            self.signal_finished.emit(2, "set stop!!%s" % tID)
-                            break
-                        pass
+                    # elif platform.system() == 'Windows':
+                    #     # TODO: windows how to output result with realtime!!
+                    #     # PIPE is not working!!, iperf3 will buffer it
+                    #     #os.environ["PYTHONUNBUFFERED"] = "1"
+                    #     self.child = subprocess.Popen(self.sCmd, shell=False,
+                    #                                   bufsize=1,
+                    #                                   stdout=subprocess.PIPE,
+                    #                                   stderr=subprocess.STDOUT)
+                    #     # need this to kill iperf3 procress
+                    #     # atexit.register(self.kill_proc, self.child)
+                    # else:
+                    #     QCoreApplication.processEvents(QEventLoop.AllEvents, 1)
+                    #     if self.stoped:
+                    #         self.signal_finished.emit(2, "set stop!!%s" % tID)
+                    #         break
+                    #     pass
                     if self.child is None:
-                            self.signal_finished.emit(-1, "command error")
+                            self.signal_finished.emit(-1, "command error: %s" % self.sCmd)
                             return -1
 
                     for line in iter(self.child.stdout.readline, b''):
@@ -367,8 +369,7 @@ class Iperf(QObject):
                             rc = self.child.poll()
                             if rc is not None:
                                 self.log("task", "iperf returncode: %s" % self.child.returncode)
-                                self.signal_finished.emit(0,
-                                                            "program exit(%s)" % rc)
+                                self.signal_finished.emit(0, "program exit(%s)" % rc)
                         if self.stoped:
                             self.signal_finished.emit(1, "set stop!!%s" % tID)
                             break
@@ -943,7 +944,7 @@ class IperfClient(QObject):
             #print("cmd: %s" % scmd)
             self.log("_parser_args", "%s" % scmd)
         else:
-            self.log("_parser_args", "ERROR: No target server in setting!!")
+            self.log("_parser_args", "ERROR: No target server ip in setting!!")
 
     def start(self):
         self._o["iThread"].start()
